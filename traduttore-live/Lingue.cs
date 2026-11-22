@@ -48,6 +48,20 @@ public static class Lingue
         "ja" => "Japanese",
         "ko" => "Korean",
         "hi" => "Hindi",
-        _ => codice,
+        _ => NomeDaCultura(codice),
     };
+
+    // Per le lingue fuori elenco riconosciute da Whisper (es. "sv" → "Swedish").
+    static string NomeDaCultura(string codice)
+    {
+        if (string.IsNullOrWhiteSpace(codice)) return codice;
+        try
+        {
+            return System.Globalization.CultureInfo.GetCultureInfo(codice).EnglishName;
+        }
+        catch (System.Globalization.CultureNotFoundException)
+        {
+            return codice;
+        }
+    }
 }

@@ -35,11 +35,34 @@ public sealed class Impostazioni
     /// <summary>Usa la scheda grafica (Vulkan) per la trascrizione, se disponibile. Cambia al riavvio del programma.</summary>
     public bool UsaSchedaGrafica { get; set; } = true;
 
-    /// <summary>Modello di Claude usato per tradurre.</summary>
-    public string ModelloClaude { get; set; } = "claude-haiku-5-5";
+    /// <summary>
+    /// Servizio di traduzione: "automatico" = i servizi gratuiti disponibili, uno dopo l'altro (TranslateGemma sul
+    /// PC con Ollama, DeepL, Microsoft Translator, MyMemory); oppure uno solo: "ollama", "deepl", "microsoft",
+    /// "mymemory", "claude" (a pagamento, mai usato in automatico).
+    /// </summary>
+    public string ServizioTraduzione { get; set; } = "automatico";
 
-    /// <summary>La chiave API è già stata chiesta al primo avvio: non la si chiede più da sola.</summary>
-    public bool ChiaveApiChiesta { get; set; }
+    /// <summary>
+    /// L'utente accetta di usare i servizi di traduzione online (MyMemory, DeepL, Microsoft, Claude), che ricevono
+    /// il testo trascritto. null = non ha ancora scelto (lo si chiede all'installazione o al primo avvio);
+    /// false = si traduce solo sul PC (TranslateGemma).
+    /// </summary>
+    public bool? ServiziOnline { get; set; }
+
+    /// <summary>Indirizzo di Ollama, il programma che fa girare i modelli di traduzione sul PC.</summary>
+    public string OllamaIndirizzo { get; set; } = "http://localhost:11434";
+
+    /// <summary>
+    /// Modello di Ollama: translategemma:4b (3,3 GB), translategemma:12b (8,1 GB, più preciso ma più lento),
+    /// oppure un modello di chat (es. gemma3:4b), che usa contesto e glossario.
+    /// </summary>
+    public string OllamaModello { get; set; } = "translategemma:4b";
+
+    /// <summary>Regione della risorsa Microsoft Translator (es. "westeurope"); vuota per le risorse globali.</summary>
+    public string MicrosoftRegione { get; set; } = "";
+
+    /// <summary>Modello di Claude, se scegli Claude (a pagamento).</summary>
+    public string ModelloClaude { get; set; } = "claude-haiku-5-5";
 
     /// <summary>
     /// Parole che Whisper deve riconoscere bene (nomi di persone, prodotti, sigle), separate da virgole.

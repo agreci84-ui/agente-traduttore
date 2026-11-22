@@ -1,0 +1,20 @@
+﻿PRIVACY POLICY
+
+Traduttore dal vivo has no server, collects no usage statistics and sends nothing to its authors.
+
+AUDIO NEVER LEAVES THE PC
+Meeting audio is transcribed on the PC with Whisper. Transcripts are saved in Documents\Traduttore dal vivo (this can be turned off from the menu).
+
+WHAT GOES OVER THE NETWORK
+- Online translation services (MyMemory and, if you set them up, DeepL, Microsoft Translator or Claude) receive the transcribed text of each sentence, not the audio. They are used only if you accept them: on the next page of this setup, at first start or from the Traduzione menu.
+- With TranslateGemma (through the Ollama program, on the PC) the text stays on the PC.
+- At first start the program downloads the transcription model (about 190 MB) and the voice activity detector from Hugging Face.
+- Service keys and the email for MyMemory stay on the PC, encrypted with your Windows account.
+
+HOW TO TURN OFF THE ONLINE SERVICES
+- In this setup: clear "Use the free online translation services".
+- At any time: Traduzione menu > "Usa i servizi online".
+
+Transcribing and saving a meeting may require the participants' consent: let them know, as you would for a recording.
+
+Full privacy policy: https://github.com/agreci84-ui/agente-traduttore/blob/main/PRIVACY.md

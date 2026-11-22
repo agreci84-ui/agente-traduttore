@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Configurazione dell'artifact «programma» su SignPath (slug: programma).
+  L'artifact è lo zip creato da GitHub Actions con i soli file compilati dal codice di questo repository:
+  le librerie di terze parti non si firmano (regole di SignPath Foundation).
+  Nome e versione del prodotto devono corrispondere a quelli dei file.
+-->
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <parameters>
+    <parameter name="version" required="true" />
+  </parameters>
+  <zip-file>
+    <pe-file-set product-name="Traduttore dal vivo" product-version="${version}">
+      <include path="TraduttoreLive.exe" />
+      <include path="TraduttoreLive.dll" />
+      <for-each>
+        <authenticode-sign />
+      </for-each>
+    </pe-file-set>
+  </zip-file>
+</artifact-configuration>

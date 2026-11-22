@@ -1,0 +1,173 @@
+# Compila Traduttore dal vivo e crea l'installer per Windows su un runner di GitHub.
+#
+# - Ad ogni push su main e ad ogni pull request: compila e mette l'installer (non firmato) tra gli artifact.
+# - Quando si pubblica un tag vX.Y.Z: crea la release su GitHub con l'installer. Se SignPath è configurato,
+#   prima fa firmare a SignPath (SignPath Foundation) i file del programma e poi l'installer; ogni firma va
+#   approvata a mano su SignPath.
+#
+# Per attivare la firma, nelle impostazioni del repository (Settings › Secrets and variables › Actions):
+#   segreto   SIGNPATH_API_TOKEN            token API di un utente SignPath con il ruolo «submitter»
+#   variabili SIGNPATH_ORGANIZATION_ID      id dell'organizzazione su SignPath
+#             SIGNPATH_PROJECT_SLUG         slug del progetto su SignPath
+#             SIGNPATH_SIGNING_POLICY_SLUG  slug della policy di firma (es. release-signing)
+# Le configurazioni degli artifact da creare su SignPath sono in .signpath/artifact-configurations.
+
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*.*.*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+jobs:
+  build:
+    name: Programma e installer per Windows
+    runs-on: windows-latest
+    timeout-minutes: 120
+    permissions:
+      contents: write   # per creare la release quando si pubblica un tag
+      actions: read     # SignPath scarica da GitHub gli artifact da firmare
+    env:
+      # Si firma solo quando si pubblica un tag e SignPath è configurato.
+      FIRMA: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.SIGNPATH_API_TOKEN != '' }}
+    defaults:
+      run:
+        shell: pwsh   # PowerShell 7: legge e scrive in UTF-8 (accenti nelle note della release, GITHUB_OUTPUT)
+
+    steps:
+      - name: Scarica il codice
+        uses: actions/checkout@v7
+
+      - name: Versione
+        id: versione
+        env:
+          TIPO_RIFERIMENTO: ${{ github.ref_type }}
+          NOME_RIFERIMENTO: ${{ github.ref_name }}
+        run: |
+          $progetto = ([xml](Get-Content traduttore-live/TraduttoreLive.csproj -Raw)).Project.PropertyGroup.Version |
+              Where-Object { $_ } | Select-Object -First 1
+          $versione = $progetto
+          if ($env:TIPO_RIFERIMENTO -eq 'tag') {
+              $versione = $env:NOME_RIFERIMENTO.TrimStart('v')
+              if ($versione -ne $progetto) {
+                  throw "Il tag v$versione non corrisponde alla versione del progetto ($progetto): aggiorna <Version> in TraduttoreLive.csproj."
+              }
+          }
+          if ($versione -notmatch '^\d+\.\d+\.\d+$') { throw "Versione non valida: $versione" }
+          "versione=$versione" >> $env:GITHUB_OUTPUT
+          Write-Host "Versione $versione, firma con SignPath: $env:FIRMA"
+
+      - name: Installa .NET 10
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Pubblica il programma
+        run: ./traduttore-live/installer/crea-installer.ps1 -Fase Pubblica -Versione ${{ steps.versione.outputs.versione }}
+
+      # ---- Firma dei file del programma (solo i file del progetto: le librerie di terze parti no) ----
+
+      - name: Prepara i file del programma da firmare
+        if: env.FIRMA == 'true'
+        run: |
+          New-Item -ItemType Directory -Force da-firmare/programma | Out-Null
+          Copy-Item traduttore-live/installer/out/publish/TraduttoreLive.exe, traduttore-live/installer/out/publish/TraduttoreLive.dll da-firmare/programma/
+
+      - name: Carica i file del programma da firmare
+        if: env.FIRMA == 'true'
+        id: programma-non-firmato
+        uses: actions/upload-artifact@v7
+        with:
+          name: programma-da-firmare
+          path: da-firmare/programma/
+          if-no-files-found: error
+
+      - name: Firma i file del programma (SignPath)
+        if: env.FIRMA == 'true'
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          artifact-configuration-slug: programma
+          github-artifact-id: ${{ steps.programma-non-firmato.outputs.artifact-id }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 3600   # la firma va approvata a mano su SignPath
+          output-artifact-directory: firmati/programma
+          parameters: |
+            version: "${{ steps.versione.outputs.versione }}"
+
+      - name: Rimetti i file firmati nel programma
+        if: env.FIRMA == 'true'
+        run: Copy-Item firmati/programma/* traduttore-live/installer/out/publish/ -Force
+
+      # ---- Installer ----
+
+      - name: Crea l'installer
+        run: ./traduttore-live/installer/crea-installer.ps1 -Fase Installer -Versione ${{ steps.versione.outputs.versione }}
+
+      - name: Carica l'installer
+        id: installer
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.FIRMA == 'true' && 'installer-da-firmare' || 'installer-non-firmato' }}
+          path: traduttore-live/installer/out/TraduttoreLive-Setup-${{ steps.versione.outputs.versione }}.exe
+          if-no-files-found: error
+
+      - name: Firma l'installer (SignPath)
+        if: env.FIRMA == 'true'
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          artifact-configuration-slug: installer
+          github-artifact-id: ${{ steps.installer.outputs.artifact-id }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 3600
+          output-artifact-directory: firmati/installer
+          parameters: |
+            version: "${{ steps.versione.outputs.versione }}"
+
+      # ---- Release ----
+
+      - name: Pubblica la release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSIONE: ${{ steps.versione.outputs.versione }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          $installer = if ($env:FIRMA -eq 'true') { "firmati/installer/TraduttoreLive-Setup-$env:VERSIONE.exe" }
+                       else { "traduttore-live/installer/out/TraduttoreLive-Setup-$env:VERSIONE.exe" }
+          if (-not (Test-Path $installer)) { throw "Installer non trovato: $installer" }
+          $firma = if ($env:FIRMA -eq 'true') {
+              "L'installer è firmato con il certificato di SignPath Foundation."
+          } else {
+              "L'installer **non è ancora firmato**: Windows può mostrare l'avviso «PC protetto da Windows» " +
+              "(Ulteriori informazioni › Esegui comunque) e Smart App Control può bloccarlo."
+          }
+          $note = @"
+          Sottotitoli tradotti in tempo reale per le riunioni online (Teams, Zoom, Meet, Webex…), per Windows 10 e 11 a 64 bit.
+          Trascrizione sul PC con Whisper; traduzione gratuita con TranslateGemma sul PC, DeepL, Microsoft Translator o MyMemory.
+
+          **Installazione**: scarica ``TraduttoreLive-Setup-$env:VERSIONE.exe`` ed eseguilo (non servono i diritti di amministratore).
+          Istruzioni complete nel [README](https://github.com/$env:REPOSITORY/blob/main/traduttore-live/README.md).
+
+          $firma
+
+          [Code signing policy](https://github.com/$env:REPOSITORY#code-signing-policy) · [Privacy](https://github.com/$env:REPOSITORY/blob/main/PRIVACY.md)
+          "@
+          Set-Content -Path note-release.md -Value $note -Encoding UTF8
+          gh release create "v$env:VERSIONE" $installer --repo $env:REPOSITORY --title "Traduttore dal vivo $env:VERSIONE" --notes-file note-release.md

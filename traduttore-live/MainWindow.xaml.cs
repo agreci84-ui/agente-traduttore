@@ -35,18 +35,54 @@ public partial class MainWindow : Window
 
     async void SuCaricata(object sender, RoutedEventArgs e)
     {
-        // Al primo avvio, se non c'è nessuna chiave, la si chiede una volta; poi resta la voce nel menu.
-        if (!_imp.ChiaveApiChiesta && !ChiaveApi.CredenzialiPresenti())
+        ApplicaSceltaInstallazione();
+        if (_imp.ServiziOnline is null)
         {
-            _imp.ChiaveApiChiesta = true;
+            _imp.ServiziOnline = ChiediServiziOnline();
             _imp.Salva();
-            ChiediChiaveApi();
         }
         await RiavviaMotoreAsync();
     }
 
-    /// <summary>Mostra la finestra della chiave API. Restituisce true se la chiave è cambiata.</summary>
-    bool ChiediChiaveApi() => new FinestraChiaveApi { Owner = this }.ShowDialog() == true;
+    // ---- Servizi online: si usano solo se l'utente li accetta ----
+
+    const string ChiaveRegistro = @"Software\TraduttoreLive";
+
+    /// <summary>
+    /// L'installer registra la scelta fatta durante l'installazione («Usa i servizi di traduzione online»):
+    /// la si applica una volta e poi la si toglie, così da lì in avanti vale quella del menu.
+    /// </summary>
+    void ApplicaSceltaInstallazione()
+    {
+        try
+        {
+            using var chiave = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(ChiaveRegistro, writable: true);
+            if (chiave?.GetValue("ServiziOnline") is int valore)
+            {
+                _imp.ServiziOnline = valore != 0;
+                _imp.Salva();
+                chiave.DeleteValue("ServiziOnline", throwOnMissingValue: false);
+            }
+        }
+        catch (Exception)
+        {
+            // Registro non leggibile: si chiede all'utente.
+        }
+    }
+
+    bool ChiediServiziOnline() => MessageBox.Show(this,
+        "Traduttore dal vivo trascrive l'audio sul PC: l'audio non viene mai inviato a nessuno.\n\n" +
+        "Per tradurre può usare servizi online gratuiti: MyMemory e, se li configuri, DeepL o Microsoft Translator. " +
+        "In quel caso il testo trascritto viene inviato al servizio che lo traduce.\n\n" +
+        "Vuoi usare i servizi online?\n\n" +
+        "• Sì: traduce subito, con MyMemory.\n" +
+        "• No: traduce solo sul PC con TranslateGemma, che richiede il programma gratuito Ollama " +
+        "(menu › Traduzione › Servizi e chiavi).\n\n" +
+        "Puoi cambiare idea in qualsiasi momento dal menu › Traduzione.",
+        "Servizi di traduzione online", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes;
+
+    /// <summary>Mostra la finestra dei servizi di traduzione. Restituisce true se qualcosa è stato salvato.</summary>
+    bool ApriServizi() => new FinestraServizi(_imp) { Owner = this }.ShowDialog() == true;
 
     // ---- Motore ----
 
@@ -167,6 +203,26 @@ public partial class MainWindow : Window
             _imp.Salva();
         });
 
+        var traduzione = Sottomenu(menu, "Traduzione");
+        bool sceltaNota = Servizi.Elenco.Any(s => s.Codice == _imp.ServizioTraduzione);
+        foreach (var (codice, nome) in Servizi.Elenco)
+        {
+            bool scelto = _imp.ServizioTraduzione == codice || (!sceltaNota && codice == Servizi.Automatico);
+            Voce(traduzione, nome, scelto, () => Cambia(() => _imp.ServizioTraduzione = codice));
+            if (codice == Servizi.Automatico) traduzione.Items.Add(new Separator());
+        }
+        traduzione.Items.Add(new Separator());
+        Voce(traduzione, "Usa i servizi online (ricevono il testo trascritto)", _imp.ServiziOnline == true, () =>
+        {
+            bool attivare = _imp.ServiziOnline != true;
+            if (attivare && !ChiediServiziOnline()) return;
+            Cambia(() => _imp.ServiziOnline = attivare);
+        });
+        Voce(traduzione, "Servizi e chiavi…", false, async () =>
+        {
+            if (ApriServizi()) await RiavviaMotoreAsync();
+        });
+
         menu.Items.Add(new Separator());
         Voce(menu, "Mostra il testo originale", _imp.MostraOriginale, () =>
         {
@@ -186,10 +242,6 @@ public partial class MainWindow : Window
         });
         Voce(menu, "Apri le trascrizioni salvate", false, () => ApriCartella(RegistroRiunione.Cartella));
         Voce(menu, "Apri la cartella delle impostazioni", false, () => ApriCartella(Impostazioni.Cartella));
-        Voce(menu, "Chiave API di Claude…", false, async () =>
-        {
-            if (ChiediChiaveApi()) await RiavviaMotoreAsync();
-        });
 
         menu.Items.Add(new Separator());
         Voce(menu, "Esci", false, Close);

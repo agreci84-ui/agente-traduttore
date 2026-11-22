@@ -30,6 +30,13 @@
 .PARAMETER MarcaTemporale
     Server della marca temporale. Predefinito: DigiCert con -Certificato, Microsoft con -ArtifactSigning.
 
+.PARAMETER Fase
+    Tutto (predefinito): pubblica il programma e crea l'installer.
+    Pubblica: solo il programma, in installer\out\publish.
+    Installer: solo l'installer, dai file già in installer\out\publish.
+    Le due fasi separate servono a GitHub Actions per far firmare a SignPath i file del programma
+    prima di creare l'installer (vedi .github\workflows\build.yml).
+
 .EXAMPLE
     .\installer\crea-installer.ps1
 .EXAMPLE
@@ -41,7 +48,9 @@ param(
     [string]$Versione,
     [string]$Certificato,
     [string]$ArtifactSigning,
-    [string]$MarcaTemporale
+    [string]$MarcaTemporale,
+    [ValidateSet('Tutto', 'Pubblica', 'Installer')]
+    [string]$Fase = 'Tutto'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -94,8 +103,11 @@ $iscc = @(
     "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
     "$env:ProgramFiles\Inno Setup 6\ISCC.exe"
 ) | Where-Object { Test-Path $_ } | Select-Object -First 1
-if (-not $iscc) {
+if (-not $iscc -and $Fase -ne 'Pubblica') {
     throw "Inno Setup 6 non trovato. Installalo con:  winget install --id JRSoftware.InnoSetup -e --scope user"
+}
+if ($Fase -eq 'Installer' -and -not (Test-Path (Join-Path $pubblicazione 'TraduttoreLive.exe'))) {
+    throw "Manca il programma pubblicato in ${pubblicazione}: prima esegui lo script con -Fase Pubblica."
 }
 
 # ---- Firma: controlli prima di compilare, così un errore non fa perdere tempo ----
@@ -138,20 +150,22 @@ if ($Certificato -or $ArtifactSigning) {
 
 # ---- Pubblicazione ----
 
-Write-Host "== Pubblico Traduttore dal vivo $Versione (win-x64, con runtime .NET incluso)" -ForegroundColor Cyan
-if (Test-Path $pubblicazione) { Remove-Item $pubblicazione -Recurse -Force }
-dotnet publish $csproj -c Release -r win-x64 --self-contained true "-p:Version=$Versione" -o $pubblicazione
-if ($LASTEXITCODE -ne 0) { throw "dotnet publish non riuscito." }
+if ($Fase -ne 'Installer') {
+    Write-Host "== Pubblico Traduttore dal vivo $Versione (win-x64, con runtime .NET incluso)" -ForegroundColor Cyan
+    if (Test-Path $pubblicazione) { Remove-Item $pubblicazione -Recurse -Force }
+    dotnet publish $csproj -c Release -r win-x64 --self-contained true "-p:Version=$Versione" -o $pubblicazione
+    if ($LASTEXITCODE -ne 0) { throw "dotnet publish non riuscito." }
 
-# Whisper.net copia le librerie native di tutte le piattaforme (Linux, Windows a 32 bit e ARM):
-# il programma è a 64 bit, quindi servono solo quelle win-x64.
-Get-ChildItem (Join-Path $pubblicazione 'runtimes') -Directory -Recurse |
-    Where-Object { $_.Name -like '*-*' -and $_.Name -ne 'win-x64' } |
-    Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+    # Whisper.net copia le librerie native di tutte le piattaforme (Linux, Windows a 32 bit e ARM):
+    # il programma è a 64 bit, quindi servono solo quelle win-x64.
+    Get-ChildItem (Join-Path $pubblicazione 'runtimes') -Directory -Recurse |
+        Where-Object { $_.Name -like '*-*' -and $_.Name -ne 'win-x64' } |
+        Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+}
 
 # ---- Firma dei file del programma ----
 
-if ($signtool) {
+if ($signtool -and $Fase -ne 'Installer') {
     # Il runtime .NET è già firmato da Microsoft; si firmano il programma e le librerie senza firma valida
     # (anche quelle di terze parti: Smart App Control blocca qualsiasi libreria non firmata).
     $daFirmare = @(Get-ChildItem $pubblicazione -Recurse -Include *.exe, *.dll |
@@ -163,6 +177,11 @@ if ($signtool) {
         & $signtool @argomentiFirma @gruppo | Out-Host
         if ($LASTEXITCODE -ne 0) { throw "Firma dei file del programma non riuscita." }
     }
+}
+
+if ($Fase -eq 'Pubblica') {
+    Write-Host "== Fatto: programma pubblicato in $pubblicazione" -ForegroundColor Green
+    return
 }
 
 # ---- Installer ----
@@ -188,5 +207,5 @@ if ($signtool) {
 }
 else {
     Write-Host "== Fatto: $installer ($mb MB)" -ForegroundColor Green
-    Write-Warning "Installer NON firmato: sugli altri PC Windows mostrerà degli avvisi. Per firmarlo usa -Certificato o -ArtifactSigning."
+    Write-Warning "Installer NON firmato dallo script (con GitHub Actions lo firma SignPath, se configurato; in locale usa -Certificato o -ArtifactSigning)."
 }

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Configurazione dell'artifact «installer» su SignPath (slug: installer).
+  L'artifact è lo zip creato da GitHub Actions con l'installer di Inno Setup, che contiene i file del programma
+  già firmati nel passaggio precedente.
+  Nota: Inno Setup riempie con spazi i campi della versione dell'installer fino a una lunghezza fissa
+  (es. "Traduttore dal vivo" seguito da spazi). Se SignPath segnala che product-name o product-version non
+  corrispondono, il motivo è questo: va adattata la restrizione su SignPath.
+-->
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <parameters>
+    <parameter name="version" required="true" />
+  </parameters>
+  <zip-file>
+    <pe-file path="TraduttoreLive-Setup-*.exe" product-name="Traduttore dal vivo" product-version="${version}">
+      <authenticode-sign />
+    </pe-file>
+  </zip-file>
+</artifact-configuration>

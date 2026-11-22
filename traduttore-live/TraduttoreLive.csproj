@@ -7,10 +7,14 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
 
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
     <Product>Traduttore dal vivo</Product>
     <AssemblyTitle>Traduttore dal vivo</AssemblyTitle>
     <Description>Sottotitoli tradotti in tempo reale per le riunioni online</Description>
+    <Authors>agreci84-ui</Authors>
+    <Copyright>Copyright © 2026 agreci84-ui. Licenza MIT.</Copyright>
+    <!-- La versione del prodotto resta «1.2.3», senza l'hash del commit: la firma con SignPath la confronta. -->
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <ApplicationIcon>icona.ico</ApplicationIcon>
     <!-- La cartella dell'installer contiene anche i file pubblicati: non fa parte del progetto. -->
     <DefaultItemExcludes>$(DefaultItemExcludes);installer\**</DefaultItemExcludes>

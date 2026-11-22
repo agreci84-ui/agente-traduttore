@@ -1,0 +1,20 @@
+﻿INFORMATIVA SULLA PRIVACY
+
+Traduttore dal vivo non ha un server, non raccoglie statistiche d'uso e non invia niente ai suoi autori.
+
+L'AUDIO NON LASCIA MAI IL PC
+L'audio della riunione viene trascritto sul PC con Whisper. Le trascrizioni si salvano in Documenti\Traduttore dal vivo (si può disattivare dal menu).
+
+COSA PASSA IN RETE
+- Servizi di traduzione online (MyMemory e, se li configuri, DeepL, Microsoft Translator o Claude): ricevono il testo trascritto di ogni frase, non l'audio. Si usano solo se li accetti: nella pagina successiva di questa installazione, al primo avvio o dal menu Traduzione.
+- Con TranslateGemma (tramite il programma Ollama, sul PC) il testo resta sul PC.
+- Al primo avvio il programma scarica da Hugging Face il modello di trascrizione (circa 190 MB) e il rilevatore di voce.
+- Chiavi dei servizi ed email per MyMemory restano sul PC, cifrate con il tuo account di Windows.
+
+COME DISATTIVARE I SERVIZI ONLINE
+- In questa installazione: togli la spunta da "Usa i servizi di traduzione online gratuiti".
+- In qualsiasi momento: menu Traduzione > "Usa i servizi online".
+
+Trascrivere e salvare una riunione può richiedere il consenso dei partecipanti: informali, come faresti per una registrazione.
+
+Informativa completa: https://github.com/agreci84-ui/agente-traduttore/blob/main/PRIVACY.md

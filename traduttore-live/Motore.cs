@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Channels;
-using Anthropic.Exceptions;
 using NAudio.CoreAudioApi;
 using TraduttoreLive.Audio;
 using TraduttoreLive.Trascrizione;
@@ -10,9 +9,9 @@ using TraduttoreLive.Traduzione;
 namespace TraduttoreLive;
 
 /// <summary>
-/// Collega i pezzi: audio del PC → frasi → trascrizione (Whisper, sul PC) → traduzione (Claude).
-/// Trascrizione e traduzione lavorano in parallelo: mentre Claude traduce una frase, Whisper
-/// trascrive già la successiva. Gli eventi arrivano da thread in background.
+/// Collega i pezzi: audio del PC → frasi → trascrizione (Whisper, sul PC) → traduzione (uno o più servizi,
+/// vedi <see cref="CatenaTraduzione"/>). Trascrizione e traduzione lavorano in parallelo: mentre una frase
+/// viene tradotta, Whisper trascrive già la successiva. Gli eventi arrivano da thread in background.
 /// </summary>
 public sealed class Motore : IAsyncDisposable
 {
@@ -32,7 +31,7 @@ public sealed class Motore : IAsyncDisposable
     CatturaAudio? _cattura;
     int? _pidProgramma;
     Trascrittore? _trascrittore;
-    volatile TraduttoreClaude? _traduttore;
+    volatile CatenaTraduzione? _traduzione;
     bool _whisperTraduceInInglese;
     MMDeviceEnumerator? _enumeratore;
     MMDeviceNotificationClient? _notifiche;
@@ -69,7 +68,7 @@ public sealed class Motore : IAsyncDisposable
     public async Task AvviaAsync()
     {
         var ct = _cts.Token;
-        PreparaTraduttore();
+        await PreparaTraduzioneAsync(ct);
 
         var avanzamento = new Avanzamento(m => StatoCambiato?.Invoke(m));
         _trascrittore = await Trascrittore.CreaAsync(_imp.ModelloWhisper, _imp.LinguaParlata, _whisperTraduceInInglese,
@@ -95,31 +94,28 @@ public sealed class Motore : IAsyncDisposable
         _sorveglianza = new Timer(_ => _ = Sorveglia(), null, 3000, 3000);
     }
 
-    void PreparaTraduttore()
+    async Task PreparaTraduzioneAsync(CancellationToken ct)
     {
-        _traduttore = null;
-        _notaTraduzione = "";
-        if (!ChiaveApi.CredenzialiPresenti())
+        _traduzione = null;
+        var servizi = await Servizi.PreparaAsync(_imp, Avviso, ct);
+        if (servizi.Count > 0)
         {
-            _notaTraduzione = " · senza traduzione";
-            Avviso(_imp.LinguaArrivo == "en"
-                ? "Manca la chiave API di Claude: traduco in inglese con Whisper, sul PC. Per tradurre con Claude inseriscila dal menu › Chiave API di Claude."
-                : "Manca la chiave API di Claude: mostro solo la trascrizione. Per tradurre inseriscila dal menu › Chiave API di Claude.");
+            var catena = new CatenaTraduzione(servizi, _imp.LinguaArrivo);
+            catena.Avviso += Avviso;
+            catena.ServizioCambiato += nome =>
+            {
+                _notaTraduzione = nome is null ? " · nessun servizio di traduzione" : $" · traduce {nome}";
+                AggiornaStato();
+            };
+            _traduzione = catena;
+            _notaTraduzione = $" · traduce {servizi[0].Nome}";
         }
         else
         {
-            try
-            {
-                _traduttore = new TraduttoreClaude(_imp.ModelloClaude, _imp.LinguaArrivo, _imp.FileGlossario);
-            }
-            catch (Exception ex)
-            {
-                _notaTraduzione = " · senza traduzione";
-                Avviso($"Non riesco a preparare la traduzione con Claude: {ex.Message}");
-            }
+            _notaTraduzione = " · senza traduzione";
         }
         // Whisper sa tradurre da solo, ma solo verso l'inglese.
-        _whisperTraduceInInglese = _traduttore is null && _imp.LinguaArrivo == "en";
+        _whisperTraduceInInglese = _traduzione is null && _imp.LinguaArrivo == "en";
         if (_whisperTraduceInInglese) _notaTraduzione = " · traduzione Whisper";
     }
 
@@ -249,9 +245,9 @@ public sealed class Motore : IAsyncDisposable
                 ControllaVelocita(cronometro.Elapsed.TotalSeconds, campioni.Length / (double)Hz);
                 if (risultato is null || _inPausa) continue;
 
-                var traduttore = _traduttore;
+                var traduzione = _traduzione;
                 string lingua = _whisperTraduceInInglese ? "en" : risultato.Lingua;
-                bool daTradurre = traduttore is not null && !string.Equals(lingua, traduttore.LinguaArrivo, StringComparison.OrdinalIgnoreCase);
+                bool daTradurre = traduzione is not null && !string.Equals(lingua, traduzione.LinguaArrivo, StringComparison.OrdinalIgnoreCase);
                 var riga = new RigaSottotitolo(segmento.Inizio, lingua, risultato.Testo, daTradurre)
                 {
                     MostraOriginale = _imp.MostraOriginale,
@@ -290,44 +286,21 @@ public sealed class Motore : IAsyncDisposable
         {
             await foreach (var riga in _codaTraduzione.Reader.ReadAllAsync(ct))
             {
-                var traduttore = _traduttore;
-                if (traduttore is null)
+                var traduzione = _traduzione;
+                if (traduzione is null)
                 {
                     riga.InTraduzione = false;
                     continue;
                 }
                 try
                 {
-                    riga.Traduzione = await traduttore.TraduciAsync(riga.Originale, riga.Lingua,
+                    // La catena prova i servizi uno dopo l'altro: gli avvisi sui servizi non disponibili li manda lei.
+                    riga.Traduzione = await traduzione.TraduciAsync(riga.Originale, riga.Lingua,
                         parziale => riga.Traduzione = parziale, ct);
                 }
                 catch (OperationCanceledException) when (ct.IsCancellationRequested)
                 {
                     throw;
-                }
-                catch (AnthropicUnauthorizedException)
-                {
-                    FermaTraduzione("Claude rifiuta la chiave API: controllala dal menu › Chiave API di Claude.");
-                }
-                catch (AnthropicForbiddenException)
-                {
-                    FermaTraduzione("La chiave API di Claude non ha accesso a questo modello o all'organizzazione.");
-                }
-                catch (AnthropicNotFoundException)
-                {
-                    FermaTraduzione($"Il modello di Claude «{_imp.ModelloClaude}» non esiste: correggi «ModelloClaude» nelle impostazioni.");
-                }
-                catch (AnthropicRateLimitException)
-                {
-                    Avviso("Claude: troppe richieste in poco tempo, questa frase resta senza traduzione.");
-                }
-                catch (AnthropicIOException)
-                {
-                    Avviso("Claude non è raggiungibile: controlla la connessione a Internet.");
-                }
-                catch (AnthropicApiException ex)
-                {
-                    Avviso($"Claude ha restituito un errore: {ex.Message}");
                 }
                 catch (Exception ex)
                 {
@@ -345,14 +318,6 @@ public sealed class Motore : IAsyncDisposable
         catch (OperationCanceledException)
         {
         }
-    }
-
-    void FermaTraduzione(string messaggio)
-    {
-        _traduttore = null;
-        _notaTraduzione = " · traduzione ferma";
-        Avviso(messaggio);
-        AggiornaStato();
     }
 
     // ---- Stato ----

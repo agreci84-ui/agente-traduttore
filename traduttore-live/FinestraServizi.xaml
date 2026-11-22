@@ -1,0 +1,187 @@
+<Window x:Class="TraduttoreLive.FinestraServizi"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Servizi di traduzione"
+        Width="640" SizeToContent="Height" MaxHeight="820" ResizeMode="NoResize"
+        WindowStartupLocation="CenterScreen" ShowInTaskbar="False" Topmost="True"
+        FontFamily="Segoe UI" FontSize="13" Closing="SuChiusura">
+    <Window.Resources>
+        <Style x:Key="Titolo" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="0,20,0,2" />
+        </Style>
+        <Style x:Key="Nota" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#5F6368" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+        <Style x:Key="Esito" TargetType="TextBlock">
+            <Setter Property="Margin" Value="0,4,0,0" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Style.Triggers>
+                <!-- Finché non c'è un esito, la riga non occupa spazio. -->
+                <Trigger Property="Text" Value="">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="Etichetta" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="0,0,10,0" />
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="Padding" Value="4,4" />
+            <Setter Property="Margin" Value="0,3" />
+        </Style>
+        <Style TargetType="PasswordBox">
+            <Setter Property="Padding" Value="4,4" />
+            <Setter Property="Margin" Value="0,3" />
+        </Style>
+        <Style TargetType="Button">
+            <Setter Property="Padding" Value="12,4" />
+            <Setter Property="MinWidth" Value="90" />
+        </Style>
+    </Window.Resources>
+
+    <DockPanel>
+        <Border DockPanel.Dock="Bottom" BorderThickness="0,1,0,0" BorderBrush="#DADCE0" Padding="20,10">
+            <DockPanel LastChildFill="False">
+                <Button x:Name="PulsanteProva" DockPanel.Dock="Left" Content="Prova i servizi" Click="SuProva"
+                        ToolTip="Traduce una frase di prova con ogni servizio configurato (anche con quello che non hai salvato)" />
+                <Button DockPanel.Dock="Right" Margin="8,0,0,0" Content="Annulla" IsCancel="True" />
+                <Button DockPanel.Dock="Right" Content="Salva" IsDefault="True" Click="SuSalva" />
+            </DockPanel>
+        </Border>
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="20,10,20,16">
+                <TextBlock TextWrapping="Wrap">
+                    Nella modalità <Bold>Automatica</Bold> il programma usa i servizi gratuiti in quest'ordine: se uno
+                    non è disponibile o ha finito la quota gratuita, passa al successivo e lo riprova più tardi.
+                    Configura quelli che vuoi: MyMemory funziona anche senza fare niente.
+                </TextBlock>
+
+                <!-- 1. Ollama -->
+                <TextBlock Style="{StaticResource Titolo}" Text="1. TranslateGemma sul PC (Ollama)" />
+                <TextBlock Style="{StaticResource Nota}">
+                    Gratis e senza limiti, e il testo non lascia il PC. Serve il programma gratuito Ollama e il modello
+                    di traduzione TranslateGemma di Google: 4b pesa 3,3 GB, 12b 8,1 GB (più preciso, ma vuole un PC
+                    potente). Senza una scheda grafica dedicata può essere lento.
+                </TextBlock>
+                <TextBlock Margin="0,6,0,0">
+                    <Hyperlink NavigateUri="https://ollama.com/download" RequestNavigate="ApriPagina">Scarica e installa Ollama</Hyperlink>
+                </TextBlock>
+                <Grid Margin="0,6,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="130" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition />
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
+                    <TextBlock Style="{StaticResource Etichetta}" Text="Modello:" />
+                    <ComboBox x:Name="OllamaModello" Grid.Column="1" IsEditable="True" Margin="0,3" Padding="4,4" />
+                    <TextBlock Grid.Row="1" Style="{StaticResource Etichetta}" Text="Indirizzo di Ollama:" />
+                    <TextBox x:Name="OllamaIndirizzo" Grid.Row="1" Grid.Column="1" />
+                </Grid>
+                <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                    <Button x:Name="PulsanteScarica" Content="Scarica il modello" Click="SuScaricaModello" />
+                    <Button Margin="8,0,0,0" Content="Controlla" Click="SuControllaOllama" />
+                </StackPanel>
+                <ProgressBar x:Name="Avanzamento" Height="6" Margin="0,8,0,0" Maximum="100" Visibility="Collapsed" />
+                <TextBlock x:Name="EsitoOllama" Style="{StaticResource Esito}" />
+
+                <!-- 2. DeepL -->
+                <TextBlock Style="{StaticResource Titolo}" Text="2. DeepL API Free" />
+                <TextBlock Style="{StaticResource Nota}">
+                    500.000 caratteri al mese gratis, circa 10 ore di parlato continuo. Serve un account DeepL con il
+                    piano gratuito «DeepL API Free» e la sua chiave API (finisce con «:fx»).
+                </TextBlock>
+                <TextBlock Margin="0,6,0,0">
+                    <Hyperlink NavigateUri="https://www.deepl.com/pro-api" RequestNavigate="ApriPagina">Crea un account DeepL API Free</Hyperlink>
+                </TextBlock>
+                <Grid Margin="0,6,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="130" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource Etichetta}" Text="Chiave API:" />
+                    <PasswordBox x:Name="ChiaveDeepL" Grid.Column="1" />
+                </Grid>
+                <TextBlock x:Name="EsitoDeepL" Style="{StaticResource Esito}" />
+
+                <!-- 3. Microsoft -->
+                <TextBlock Style="{StaticResource Titolo}" Text="3. Microsoft Translator" />
+                <TextBlock Style="{StaticResource Nota}">
+                    2 milioni di caratteri al mese gratis con il piano F0, circa 40 ore di parlato continuo. Serve un
+                    account Azure e una risorsa Translator: la chiave e la regione sono nella pagina «Chiavi ed
+                    endpoint» della risorsa.
+                </TextBlock>
+                <TextBlock Margin="0,6,0,0">
+                    <Hyperlink NavigateUri="https://learn.microsoft.com/azure/ai-services/translator/create-translator-resource"
+                               RequestNavigate="ApriPagina">Come creare la risorsa Translator</Hyperlink>
+                </TextBlock>
+                <Grid Margin="0,6,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="130" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition />
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
+                    <TextBlock Style="{StaticResource Etichetta}" Text="Chiave:" />
+                    <PasswordBox x:Name="ChiaveMicrosoft" Grid.Column="1" />
+                    <TextBlock Grid.Row="1" Style="{StaticResource Etichetta}" Text="Regione:" />
+                    <TextBox x:Name="RegioneMicrosoft" Grid.Row="1" Grid.Column="1"
+                             ToolTip="Per esempio westeurope; lasciala vuota se la risorsa è «globale»" />
+                </Grid>
+                <TextBlock x:Name="EsitoMicrosoft" Style="{StaticResource Esito}" />
+
+                <!-- 4. MyMemory -->
+                <TextBlock Style="{StaticResource Titolo}" Text="4. MyMemory" />
+                <TextBlock Style="{StaticResource Nota}">
+                    Gratis e senza registrazione, ma con un limite giornaliero: circa 5.000 caratteri (pochi minuti di
+                    parlato), 50.000 indicando il tuo indirizzo email (circa un'ora). È l'ultima scelta della modalità
+                    automatica.
+                </TextBlock>
+                <Grid Margin="0,6,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="130" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource Etichetta}" Text="Email (facoltativa):" />
+                    <TextBox x:Name="EmailMyMemory" Grid.Column="1" />
+                </Grid>
+                <TextBlock x:Name="EsitoMyMemory" Style="{StaticResource Esito}" />
+
+                <!-- Claude -->
+                <TextBlock Style="{StaticResource Titolo}" Text="A pagamento: Claude" />
+                <TextBlock Style="{StaticResource Nota}">
+                    Traduce meglio le frasi difficili e usa il contesto e il glossario, ma l'API di Claude si paga a
+                    consumo (circa 0,10 $ all'ora con claude-haiku-5-5). Non viene mai usato in automatico: per usarlo
+                    sceglilo dal menu › Traduzione.
+                </TextBlock>
+                <TextBlock Margin="0,6,0,0">
+                    <Hyperlink NavigateUri="https://platform.claude.com/settings/keys" RequestNavigate="ApriPagina">Crea una chiave API di Claude</Hyperlink>
+                </TextBlock>
+                <Grid Margin="0,6,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="130" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource Etichetta}" Text="Chiave API:" />
+                    <PasswordBox x:Name="ChiaveClaude" Grid.Column="1" />
+                </Grid>
+                <TextBlock x:Name="EsitoClaude" Style="{StaticResource Esito}" />
+
+                <TextBlock Style="{StaticResource Nota}" Margin="0,20,0,0">
+                    Chiavi ed email restano su questo PC, cifrate con il tuo account di Windows. Con i servizi online il
+                    testo trascritto (non l'audio) viene inviato a quel servizio; con TranslateGemma resta sul PC.
+                </TextBlock>
+                <TextBlock x:Name="Errore" Margin="0,10,0,0" Foreground="#C42B1C" TextWrapping="Wrap" Visibility="Collapsed" />
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

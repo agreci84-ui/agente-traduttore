@@ -153,9 +153,12 @@ jobs:
                        else { "traduttore-live/installer/out/TraduttoreLive-Setup-$env:VERSIONE.exe" }
           if (-not (Test-Path $installer)) { throw "Installer non trovato: $installer" }
           $firma = if ($env:FIRMA -eq 'true') {
-              "L'installer è firmato con il certificato di SignPath Foundation."
+              "**Code signing**: free code signing provided by [SignPath.io](https://about.signpath.io), " +
+              "certificate by [SignPath Foundation](https://signpath.org)."
           } else {
-              "L'installer **non è ancora firmato**: Windows può mostrare l'avviso «PC protetto da Windows» " +
+              "**Code signing**: il progetto usa la firma gratuita di [SignPath.io](https://about.signpath.io) con il " +
+              "certificato di [SignPath Foundation](https://signpath.org), in attesa di approvazione. Questo installer " +
+              "**non è ancora firmato**: Windows può mostrare l'avviso «PC protetto da Windows» " +
               "(Ulteriori informazioni › Esegui comunque) e Smart App Control può bloccarlo."
           }
           $note = @"

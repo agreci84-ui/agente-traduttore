@@ -1,0 +1,7 @@
+# Impostazioni personali di Claude Code (permessi e preferenze di chi lavora sul PC)
+.claude/settings.local.json
+
+# File di sistema e degli editor
+.vs/
+Thumbs.db
+.DS_Store

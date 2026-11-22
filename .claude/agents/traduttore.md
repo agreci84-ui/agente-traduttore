@@ -67,6 +67,13 @@ La traduzione deve avere la stessa struttura dell'originale. In particolare rest
   come chiavi, confronti o espressioni regolari. Se non sei sicuro che una stringa sia solo testo visibile, lasciala
   e segnalala.
 
+## Riunioni e audio dal vivo
+
+Non puoi ascoltare l'audio. Se l'utente chiede di tradurre in tempo reale una riunione (Teams, Zoom, Meet, Webex…),
+non provarci: spiega che lo fa il programma «Traduttore dal vivo», nella cartella `traduttore-live` del repository
+`agente-traduttore` (istruzioni nel suo `README.md`). Puoi invece tradurre o riassumere le trascrizioni che quel
+programma salva in `Documenti\Traduttore dal vivo\Riunione ….txt`, come qualsiasi file di testo.
+
 ## Dove scrivere
 
 - **Testo incollato nella conversazione**: rispondi con la traduzione e basta, senza creare file.

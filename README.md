@@ -4,6 +4,10 @@ Un agente per [Claude Code](https://claude.com/claude-code) che traduce testi, f
 
 L'agente è definito in [.claude/agents/traduttore.md](.claude/agents/traduttore.md).
 
+Per **tradurre dal vivo le voci di una riunione** (Teams, Zoom, Meet…) c'è un programma a parte, il
+[Traduttore dal vivo](traduttore-live/README.md): un agente di Claude Code lavora su testi e file e non può
+ascoltare l'audio.
+
 ## Cosa sa fare
 
 - Traduce **testo incollato** nella conversazione, **singoli file** o **intere cartelle**.
@@ -52,3 +56,12 @@ Per avere sempre la stessa traduzione dei termini di un progetto, aggiungi al pr
 ```
 
 L'agente lo legge prima di iniziare e le sue scelte prevalgono su quelle dell'agente.
+
+## Traduzione dal vivo delle riunioni
+
+Il programma [Traduttore dal vivo](traduttore-live/README.md) ascolta l'audio del PC durante una riunione online e
+mostra la traduzione delle voci degli altri partecipanti come sottotitoli, in una finestra sempre in primo piano.
+La trascrizione avviene sul PC con Whisper; la traduzione la fa Claude, che riceve solo il testo.
+
+Le trascrizioni che salva (`Documenti\Traduttore dal vivo`) sono normali file di testo: dopo la riunione puoi
+chiedere all'agente di tradurle in un'altra lingua o di trarne un riassunto.

@@ -1,0 +1,60 @@
+﻿<Window x:Class="TraduttoreLive.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Traduttore dal vivo"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        Topmost="True" ShowInTaskbar="True" ResizeMode="CanResizeWithGrip"
+        MinWidth="380" MinHeight="120" Width="900" Height="240"
+        FontFamily="Segoe UI"
+        Loaded="SuCaricata" Closing="SuChiusura" PreviewMouseWheel="SuRotellina">
+
+    <Border x:Name="Cornice" CornerRadius="10" Background="#E0101317" BorderBrush="#30FFFFFF" BorderThickness="1"
+            MouseLeftButtonDown="Trascina">
+        <Grid Margin="16,6,10,14">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!-- Barra in alto: stato e pulsanti -->
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button x:Name="PulsantePausa" Style="{StaticResource PulsanteBarra}" Content="&#xE769;"
+                            ToolTip="Metti in pausa" Click="SuPausa" />
+                    <Button Style="{StaticResource PulsanteBarra}" Content="&#xE712;"
+                            ToolTip="Impostazioni" Click="SuMenu" />
+                    <Button Style="{StaticResource PulsanteBarra}" Content="&#xE8BB;"
+                            ToolTip="Chiudi" Click="SuChiudi" />
+                </StackPanel>
+                <TextBlock x:Name="TestoStato" Foreground="#8CFFFFFF" FontSize="12" VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis" Text="Avvio…" />
+            </DockPanel>
+
+            <!-- Sottotitoli -->
+            <ScrollViewer x:Name="Scorrimento" Grid.Row="1" Margin="0,4,6,0" Focusable="False"
+                          VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
+                <ItemsControl x:Name="Elenco" Focusable="False">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Margin="0,8,0,0">
+                                <TextBlock Text="{Binding RigaOriginale}" TextWrapping="Wrap"
+                                           Foreground="#99C3CCD8" FontSize="{DynamicResource DimensioneOriginale}"
+                                           Visibility="{Binding RigaOriginaleVisibile, Converter={StaticResource BoolInVisibilita}}" />
+                                <TextBlock x:Name="Principale" Text="{Binding TestoPrincipale}" TextWrapping="Wrap"
+                                           Foreground="White" FontWeight="SemiBold"
+                                           FontSize="{DynamicResource DimensioneTesto}" />
+                            </StackPanel>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding Avviso}" Value="True">
+                                    <Setter TargetName="Principale" Property="Foreground" Value="#FFF2C66D" />
+                                    <Setter TargetName="Principale" Property="FontWeight" Value="Normal" />
+                                    <Setter TargetName="Principale" Property="FontSize" Value="{DynamicResource DimensioneOriginale}" />
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Grid>
+    </Border>
+</Window>

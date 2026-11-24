@@ -1,7 +1,9 @@
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Channels;
+#if WINDOWS
 using NAudio.CoreAudioApi;
+#endif
 using TraduttoreLive.Audio;
 using TraduttoreLive.Trascrizione;
 using TraduttoreLive.Traduzione;
@@ -33,9 +35,13 @@ public sealed class Motore : IAsyncDisposable
     Trascrittore? _trascrittore;
     volatile CatenaTraduzione? _traduzione;
     bool _whisperTraduceInInglese;
+#if WINDOWS
     MMDeviceEnumerator? _enumeratore;
     MMDeviceNotificationClient? _notifiche;
+#endif
     Timer? _sorveglianza;
+    int _sorveglianzaInCorso;
+    DateTime _ultimoAvvioCattura;
     Task? _lavoroTrascrizione;
     Task? _lavoroTraduzione;
 
@@ -43,6 +49,8 @@ public sealed class Motore : IAsyncDisposable
     bool _eraInPausa;
     string _sorgente = "";
     string _notaTraduzione = "";
+    bool _conAIIntegrata;
+    bool _aiIntegrataScaricata;
     string? _attesa;
     double _caricoMedio;
     bool _avvisatoLentezza;
@@ -79,17 +87,20 @@ public sealed class Motore : IAsyncDisposable
 
         await AvviaCatturaAsync();
 
+#if WINDOWS
         if (_imp.Sorgente == "dispositivo" && _imp.DispositivoId is null)
         {
             // Se cambia il dispositivo predefinito (cuffie collegate, altoparlanti Bluetooth...) lo si segue.
+            // Sul Mac se ne accorge il programma che ascolta l'audio, che si ferma e viene riavviato.
             _enumeratore = new MMDeviceEnumerator();
             _notifiche = _enumeratore.CreateNotificationClient(false);
             _notifiche.DefaultDeviceChanged += (_, e) =>
             {
                 if (e.Flow == DataFlow.Render && e.Role == Role.Multimedia)
-                    _ = Task.Run(AvviaCatturaAsync);
+                    _ = Task.Run(() => AvviaCatturaAsync());
             };
         }
+#endif
         // Controllo periodico: il programma da ascoltare è stato avviato o chiuso? La cattura si è fermata?
         _sorveglianza = new Timer(_ => _ = Sorveglia(), null, 3000, 3000);
     }
@@ -109,6 +120,14 @@ public sealed class Motore : IAsyncDisposable
             };
             _traduzione = catena;
             _notaTraduzione = $" · traduce {servizi[0].Nome}";
+            if (servizi[0] is ServizioIntegrato)
+            {
+                _conAIIntegrata = true;
+                AIIntegrata.Cambiato += SuAIIntegrataCambiata;
+                // Finché l'AI integrata non è pronta traduce il servizio successivo, se c'è.
+                if (AIIntegrata.Stato != AIIntegrata.Fase.Pronta)
+                    _notaTraduzione = servizi.Count > 1 ? $" · traduce {servizi[1].Nome}" : " · nessun servizio di traduzione";
+            }
         }
         else
         {
@@ -121,15 +140,22 @@ public sealed class Motore : IAsyncDisposable
 
     // ---- Cattura ----
 
-    async Task AvviaCatturaAsync()
+    /// <param name="soloSeFerma">Non riavvia una cattura che sta già funzionando (controlli periodici).</param>
+    async Task AvviaCatturaAsync(bool soloSeFerma = false)
     {
         await _semaforoCattura.WaitAsync();
         try
         {
-            if (_cts.IsCancellationRequested) return;
+            if (_cts.IsCancellationRequested || (soloSeFerma && _cattura is not null)) return;
+            _ultimoAvvioCattura = DateTime.UtcNow;
             _cattura?.Dispose();
             _cattura = null;
             _pidProgramma = null;
+            if (OperatingSystem.IsMacOS())
+            {
+                _attesa = "Avvio l'ascolto dell'audio (la prima volta macOS chiede il permesso di registrare l'audio di sistema)…";
+                AggiornaStato();
+            }
 
             CatturaAudio nuova;
             if (_imp.Sorgente == "programma" && !string.IsNullOrWhiteSpace(_imp.NomeProgramma))
@@ -191,21 +217,36 @@ public sealed class Motore : IAsyncDisposable
 
     async Task Sorveglia()
     {
-        if (_cts.IsCancellationRequested || _imp.Sorgente != "programma") return;
-        bool daRiavviare = _cattura is null;
-        if (_pidProgramma is int pid)
+        if (_cts.IsCancellationRequested || Interlocked.Exchange(ref _sorveglianzaInCorso, 1) == 1) return;
+        try
         {
-            try
+            if (_imp.Sorgente != "programma")
             {
-                using var p = Process.GetProcessById(pid);
-                daRiavviare |= p.HasExited;
+                // La cattura non è partita (per esempio il Mac aspettava il permesso di registrare l'audio): si riprova.
+                if (_cattura is null && DateTime.UtcNow - _ultimoAvvioCattura > TimeSpan.FromSeconds(30))
+                    await AvviaCatturaAsync(soloSeFerma: true);
+                return;
             }
-            catch (ArgumentException)
+            bool chiuso = false;
+            if (_pidProgramma is int pid)
             {
-                daRiavviare = true; // processo chiuso
+                try
+                {
+                    using var p = Process.GetProcessById(pid);
+                    chiuso = p.HasExited;
+                }
+                catch (ArgumentException)
+                {
+                    chiuso = true; // processo chiuso
+                }
             }
+            if (chiuso) await AvviaCatturaAsync();
+            else if (_cattura is null) await AvviaCatturaAsync(soloSeFerma: true);
         }
-        if (daRiavviare) await AvviaCatturaAsync();
+        finally
+        {
+            Volatile.Write(ref _sorveglianzaInCorso, 0);
+        }
     }
 
     // ---- Trascrizione ----
@@ -322,6 +363,18 @@ public sealed class Motore : IAsyncDisposable
 
     // ---- Stato ----
 
+    void SuAIIntegrataCambiata()
+    {
+        if (_cts.IsCancellationRequested) return;
+        if (AIIntegrata.Stato == AIIntegrata.Fase.Scaricamento) _aiIntegrataScaricata = true;
+        if (AIIntegrata.Stato == AIIntegrata.Fase.Pronta && _aiIntegrataScaricata)
+        {
+            _aiIntegrataScaricata = false;
+            Avviso("L'AI di traduzione integrata è pronta: da adesso traduce sul computer, gratis e senza limiti.");
+        }
+        AggiornaStato();
+    }
+
     void Avviso(string testo) =>
         NuovaRiga?.Invoke(new RigaSottotitolo(DateTime.Now, "", testo, false) { Avviso = true });
 
@@ -334,16 +387,22 @@ public sealed class Motore : IAsyncDisposable
         }
         string parlata = _imp.LinguaParlata == "auto" ? "lingua automatica" : Lingue.Nome(_imp.LinguaParlata).ToLowerInvariant();
         string arrivo = Lingue.Nome(_imp.LinguaArrivo).ToLowerInvariant();
-        string calcolo = Trascrittore.MotoreDiCalcolo.Contains("vulkan", StringComparison.OrdinalIgnoreCase) ? "scheda grafica" : "processore";
-        StatoCambiato?.Invoke($"{(_inPausa ? "In pausa" : "In ascolto")} · {_sorgente} · {parlata} → {arrivo} · Whisper {_imp.ModelloWhisper} ({calcolo}){_notaTraduzione}");
+        string calcolo = Trascrittore.SuSchedaGrafica ? "scheda grafica" : "processore";
+        string ai = _conAIIntegrata && AIIntegrata.Stato is AIIntegrata.Fase.Scaricamento or AIIntegrata.Fase.Verifica or AIIntegrata.Fase.Caricamento
+            ? $" · AI integrata: {AIIntegrata.Descrizione}"
+            : "";
+        StatoCambiato?.Invoke($"{(_inPausa ? "In pausa" : "In ascolto")} · {_sorgente} · {parlata} → {arrivo} · Whisper {_imp.ModelloWhisper} ({calcolo}){_notaTraduzione}{ai}");
     }
 
     public async ValueTask DisposeAsync()
     {
         _cts.Cancel();
+        if (_conAIIntegrata) AIIntegrata.Cambiato -= SuAIIntegrataCambiata;
         _sorveglianza?.Dispose();
+#if WINDOWS
         _notifiche?.Dispose();
         _enumeratore?.Dispose();
+#endif
         await _semaforoCattura.WaitAsync();
         try
         {

@@ -71,13 +71,14 @@ public partial class MainWindow : Window
     }
 
     bool ChiediServiziOnline() => MessageBox.Show(this,
-        "Traduttore dal vivo trascrive l'audio sul PC: l'audio non viene mai inviato a nessuno.\n\n" +
-        "Per tradurre può usare servizi online gratuiti: MyMemory e, se li configuri, DeepL o Microsoft Translator. " +
-        "In quel caso il testo trascritto viene inviato al servizio che lo traduce.\n\n" +
-        "Vuoi usare i servizi online?\n\n" +
-        "• Sì: traduce subito, con MyMemory.\n" +
-        "• No: traduce solo sul PC con TranslateGemma, che richiede il programma gratuito Ollama " +
-        "(menu › Traduzione › Servizi e chiavi).\n\n" +
+        "Traduttore dal vivo trascrive e traduce sul PC con la sua AI integrata: l'audio e il testo non lasciano " +
+        "il computer. La prima volta l'AI si scarica da sola (2,5 GB): ci vuole qualche minuto.\n\n" +
+        "Mentre si scarica, o se il PC è troppo lento per usarla, il programma può tradurre con servizi online " +
+        "gratuiti (MyMemory e, se li configuri, Google Gemini, Groq, DeepL o Microsoft Translator), che ricevono il " +
+        "testo trascritto, mai l'audio.\n\n" +
+        "Vuoi usare anche i servizi online?\n\n" +
+        "• Sì: traduce subito, anche mentre l'AI integrata si scarica.\n" +
+        "• No: traduce solo sul PC, appena l'AI integrata è pronta.\n\n" +
         "Puoi cambiare idea in qualsiasi momento dal menu › Traduzione.",
         "Servizi di traduzione online", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes;
 
@@ -204,14 +205,19 @@ public partial class MainWindow : Window
         });
 
         var traduzione = Sottomenu(menu, "Traduzione");
+        // In vista solo le scelte principali; gli altri servizi sono in un sottomenu.
         bool sceltaNota = Servizi.Elenco.Any(s => s.Codice == _imp.ServizioTraduzione);
+        var altri = new MenuItem { Header = "Un solo servizio" };
         foreach (var (codice, nome) in Servizi.Elenco)
         {
             bool scelto = _imp.ServizioTraduzione == codice || (!sceltaNota && codice == Servizi.Automatico);
-            Voce(traduzione, nome, scelto, () => Cambia(() => _imp.ServizioTraduzione = codice));
-            if (codice == Servizi.Automatico) traduzione.Items.Add(new Separator());
+            Voce(codice is Servizi.Automatico or Servizi.Integrata ? traduzione : altri, nome, scelto,
+                () => Cambia(() => _imp.ServizioTraduzione = codice));
         }
+        traduzione.Items.Add(altri);
         traduzione.Items.Add(new Separator());
+        Voce(traduzione, "Usa l'AI integrata (la prima volta si scarica: 2,5 GB)", _imp.UsaAIIntegrata,
+            () => Cambia(() => _imp.UsaAIIntegrata = !_imp.UsaAIIntegrata));
         Voce(traduzione, "Usa i servizi online (ricevono il testo trascritto)", _imp.ServiziOnline == true, () =>
         {
             bool attivare = _imp.ServiziOnline != true;

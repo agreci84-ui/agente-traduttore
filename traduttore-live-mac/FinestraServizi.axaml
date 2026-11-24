@@ -1,0 +1,196 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="TraduttoreLive.FinestraServizi"
+        Title="Servizi di traduzione"
+        Width="640" SizeToContent="Height" MaxHeight="820" CanResize="False"
+        WindowStartupLocation="CenterScreen" ShowInTaskbar="False" Topmost="True"
+        FontSize="13">
+
+    <Window.Styles>
+        <Style Selector="TextBlock.titolo">
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="0,20,0,2" />
+        </Style>
+        <Style Selector="TextBlock.nota">
+            <Setter Property="Opacity" Value="0.72" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+        <Style Selector="TextBlock.esito">
+            <Setter Property="Margin" Value="0,4,0,0" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+        <Style Selector="TextBlock.etichetta">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="0,0,10,0" />
+        </Style>
+        <Style Selector="TextBox">
+            <Setter Property="Margin" Value="0,3" />
+        </Style>
+        <Style Selector="Button">
+            <Setter Property="MinWidth" Value="90" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="HyperlinkButton">
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="Margin" Value="0,6,0,0" />
+        </Style>
+    </Window.Styles>
+
+    <DockPanel>
+        <Border DockPanel.Dock="Bottom" BorderThickness="0,1,0,0" BorderBrush="#40808080" Padding="20,10">
+            <DockPanel LastChildFill="False">
+                <Button x:Name="PulsanteProva" DockPanel.Dock="Left" Content="Prova i servizi" Click="SuProva"
+                        ToolTip.Tip="Traduce una frase di prova con ogni servizio configurato (anche con quello che non hai salvato)" />
+                <Button DockPanel.Dock="Right" Margin="8,0,0,0" Content="Salva" IsDefault="True" Classes="accent" Click="SuSalva" />
+                <Button DockPanel.Dock="Right" Content="Annulla" IsCancel="True" Click="SuAnnulla" />
+            </DockPanel>
+        </Border>
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="20,10,20,16">
+                <TextBlock Classes="titolo" Margin="0,4,0,2" Text="AI di traduzione integrata (consigliata)" />
+                <TextBlock Classes="nota">
+                    Traduce sul Mac, gratis e senza limiti: il testo non lascia il computer e non servono account né
+                    chiavi. Il programma la scarica da solo la prima volta (2,5 GB) e la usa prima degli altri servizi.
+                    Va veloce sui Mac con Apple Silicon; sui Mac con processore Intel ogni frase richiede qualche secondo e,
+                    se non sta al passo, il programma passa ai servizi online.
+                </TextBlock>
+                <CheckBox x:Name="UsaIntegrata" Margin="0,8,0,0" Content="Usa l'AI integrata" />
+                <ProgressBar x:Name="AvanzamentoIntegrata" Height="6" MinHeight="6" Margin="0,6,0,0" Maximum="100" IsVisible="False" />
+                <TextBlock x:Name="EsitoIntegrata" Classes="esito" />
+
+                <Expander x:Name="Avanzate" Margin="0,20,0,0" HorizontalAlignment="Stretch"
+                          Header="Avanzate: altri servizi di traduzione e chiavi API">
+                    <StackPanel>
+                <TextBlock TextWrapping="Wrap">
+                    Non serve configurare niente. Nella modalità <Bold>Automatica</Bold> il programma usa prima l'AI
+                    integrata e poi, finché non è pronta o se il computer non sta al passo, questi servizi in quest'ordine:
+                    se uno non è disponibile o ha finito la quota gratuita, passa al successivo e lo riprova più tardi.
+                    MyMemory funziona anche senza fare niente.
+                </TextBlock>
+
+                <!-- 1. Ollama -->
+                <TextBlock Classes="titolo" Text="1. TranslateGemma sul Mac (Ollama)" />
+                <TextBlock Classes="nota">
+                    Per chi usa già Ollama, in alternativa all'AI integrata. Gratis e senza limiti, e il testo non lascia il Mac. Serve il programma gratuito Ollama e il modello
+                   
+                    di traduzione TranslateGemma di Google: 4b pesa 3,3 GB, 12b 8,1 GB (più preciso, ma vuole un Mac
+                    potente). Sui Mac con Apple Silicon è veloce; sui Mac con processore Intel può essere lento.
+                </TextBlock>
+                <HyperlinkButton NavigateUri="https://ollama.com/download" Content="Scarica e installa Ollama" />
+                <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto" Margin="0,6,0,0">
+                    <TextBlock Classes="etichetta" Text="Modello:" />
+                    <ComboBox x:Name="OllamaModello" Grid.Column="1" IsEditable="True" Margin="0,3"
+                              HorizontalAlignment="Stretch" />
+                    <TextBlock Grid.Row="1" Classes="etichetta" Text="Indirizzo di Ollama:" />
+                    <TextBox x:Name="OllamaIndirizzo" Grid.Row="1" Grid.Column="1" />
+                </Grid>
+                <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,6,0,0">
+                    <Button x:Name="PulsanteScarica" Content="Scarica il modello" Click="SuScaricaModello" />
+                    <Button Content="Controlla" Click="SuControllaOllama" />
+                </StackPanel>
+                <ProgressBar x:Name="Avanzamento" Height="6" MinHeight="6" Margin="0,8,0,0" Maximum="100" IsVisible="False" />
+                <TextBlock x:Name="EsitoOllama" Classes="esito" />
+
+                <!-- 2. Gemini -->
+                <TextBlock Classes="titolo" Text="2. Google Gemini, AI gratuita" />
+                <TextBlock Classes="nota">
+                    Traduce molto meglio dei servizi qui sotto: segue il senso della conversazione, usa le frasi
+                    precedenti e il glossario e corregge le parole trascritte male. Gratis con un account Google, senza
+                    carta di credito, con un limite giornaliero che di solito basta per circa un'ora di riunione; poi si
+                    passa al servizio successivo. Attenzione: con il piano gratuito Google può usare i testi inviati per
+                    migliorare i suoi prodotti, anche facendoli leggere a delle persone. Non usarlo per le riunioni riservate.
+                </TextBlock>
+                <HyperlinkButton NavigateUri="https://aistudio.google.com/apikey" Content="Crea una chiave API gratuita in Google AI Studio" />
+                <Grid ColumnDefinitions="140,*" Margin="0,6,0,0">
+                    <TextBlock Classes="etichetta" Text="Chiave API:" />
+                    <TextBox x:Name="ChiaveGemini" Grid.Column="1" PasswordChar="•" />
+                </Grid>
+                <TextBlock x:Name="EsitoGemini" Classes="esito" />
+
+                <!-- 3. Groq -->
+                <TextBlock Classes="titolo" Text="3. Groq, AI gratuita" />
+                <TextBlock Classes="nota">
+                    Un'altra AI gratuita, molto veloce, con modelli aperti: traduce bene, con il contesto e il glossario.
+                    Gratis con un account Groq, senza carta di credito, con un limite giornaliero più basso (circa
+                    mezz'ora di riunione). Groq usa i testi solo per rispondere, non per addestrare i modelli.
+                </TextBlock>
+                <HyperlinkButton NavigateUri="https://console.groq.com/keys" Content="Crea una chiave API gratuita su GroqCloud" />
+                <Grid ColumnDefinitions="140,*" Margin="0,6,0,0">
+                    <TextBlock Classes="etichetta" Text="Chiave API:" />
+                    <TextBox x:Name="ChiaveGroq" Grid.Column="1" PasswordChar="•" />
+                </Grid>
+                <TextBlock x:Name="EsitoGroq" Classes="esito" />
+
+                <!-- 4. DeepL -->
+                <TextBlock Classes="titolo" Text="4. DeepL API Free" />
+                <TextBlock Classes="nota">
+                    500.000 caratteri al mese gratis, circa 10 ore di parlato continuo. Serve un account DeepL con il
+                    piano gratuito «DeepL API Free» e la sua chiave API (finisce con «:fx»).
+                </TextBlock>
+                <HyperlinkButton NavigateUri="https://www.deepl.com/pro-api" Content="Crea un account DeepL API Free" />
+                <Grid ColumnDefinitions="140,*" Margin="0,6,0,0">
+                    <TextBlock Classes="etichetta" Text="Chiave API:" />
+                    <TextBox x:Name="ChiaveDeepL" Grid.Column="1" PasswordChar="•" />
+                </Grid>
+                <TextBlock x:Name="EsitoDeepL" Classes="esito" />
+
+                <!-- 5. Microsoft -->
+                <TextBlock Classes="titolo" Text="5. Microsoft Translator" />
+                <TextBlock Classes="nota">
+                    2 milioni di caratteri al mese gratis con il piano F0, circa 40 ore di parlato continuo. Serve un
+                    account Azure e una risorsa Translator: la chiave e la regione sono nella pagina «Chiavi ed
+                    endpoint» della risorsa.
+                </TextBlock>
+                <HyperlinkButton NavigateUri="https://learn.microsoft.com/azure/ai-services/translator/create-translator-resource"
+                                 Content="Come creare la risorsa Translator" />
+                <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto" Margin="0,6,0,0">
+                    <TextBlock Classes="etichetta" Text="Chiave:" />
+                    <TextBox x:Name="ChiaveMicrosoft" Grid.Column="1" PasswordChar="•" />
+                    <TextBlock Grid.Row="1" Classes="etichetta" Text="Regione:" />
+                    <TextBox x:Name="RegioneMicrosoft" Grid.Row="1" Grid.Column="1"
+                             Watermark="per esempio westeurope; vuota se la risorsa è «globale»" />
+                </Grid>
+                <TextBlock x:Name="EsitoMicrosoft" Classes="esito" />
+
+                <!-- 6. MyMemory -->
+                <TextBlock Classes="titolo" Text="6. MyMemory" />
+                <TextBlock Classes="nota">
+                    Gratis e senza registrazione, ma con un limite giornaliero: circa 5.000 caratteri (pochi minuti di
+                    parlato), 50.000 indicando il tuo indirizzo email (circa un'ora). È l'ultima scelta della modalità
+                    automatica.
+                </TextBlock>
+                <Grid ColumnDefinitions="140,*" Margin="0,6,0,0">
+                    <TextBlock Classes="etichetta" Text="Email (facoltativa):" />
+                    <TextBox x:Name="EmailMyMemory" Grid.Column="1" />
+                </Grid>
+                <TextBlock x:Name="EsitoMyMemory" Classes="esito" />
+
+                <!-- Claude -->
+                <TextBlock Classes="titolo" Text="A pagamento: Claude" />
+                <TextBlock Classes="nota">
+                    Traduce meglio le frasi difficili e usa il contesto e il glossario, ma l'API di Claude si paga a
+                    consumo (circa 0,10 $ all'ora con claude-haiku-5-5). Non viene mai usato in automatico: per usarlo
+                    sceglilo dal menu › Traduzione.
+                </TextBlock>
+                <HyperlinkButton NavigateUri="https://platform.claude.com/settings/keys" Content="Crea una chiave API di Claude" />
+                <Grid ColumnDefinitions="140,*" Margin="0,6,0,0">
+                    <TextBlock Classes="etichetta" Text="Chiave API:" />
+                    <TextBox x:Name="ChiaveClaude" Grid.Column="1" PasswordChar="•" />
+                </Grid>
+                <TextBlock x:Name="EsitoClaude" Classes="esito" />
+
+                <TextBlock Classes="nota" Margin="0,20,0,0">
+                    Chiavi ed email restano su questo Mac, nel Portachiavi. Con i servizi online il testo trascritto
+                    (non l'audio) viene inviato a quel servizio; con TranslateGemma resta sul Mac.
+                </TextBlock>
+                    </StackPanel>
+                </Expander>
+                <TextBlock x:Name="Errore" Margin="0,10,0,0" Foreground="#D1242F" TextWrapping="Wrap" IsVisible="False" />
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

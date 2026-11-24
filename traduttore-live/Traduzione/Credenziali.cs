@@ -15,6 +15,8 @@ public static class Credenziali
     public const string DeepL = "deepl";
     public const string Microsoft = "microsoft";
     public const string MyMemory = "mymemory";
+    public const string Gemini = "gemini";
+    public const string Groq = "groq";
 
     static readonly byte[] Entropia = "TraduttoreLive.Credenziali.v1"u8.ToArray();
     static readonly object Blocco = new();

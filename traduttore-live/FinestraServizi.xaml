@@ -55,16 +55,31 @@
 
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel Margin="20,10,20,16">
+                <TextBlock Style="{StaticResource Titolo}" Margin="0,4,0,2" Text="AI di traduzione integrata (consigliata)" />
+                <TextBlock Style="{StaticResource Nota}">
+                    Traduce sul PC, gratis e senza limiti: il testo non lascia il computer e non servono account né
+                    chiavi. Il programma la scarica da solo la prima volta (2,5 GB) e la usa prima degli altri servizi.
+                    Va veloce con una scheda grafica; sui PC che hanno solo il processore ogni frase richiede qualche
+                    secondo e, se non sta al passo, il programma passa ai servizi online.
+                </TextBlock>
+                <CheckBox x:Name="UsaIntegrata" Margin="0,8,0,0" Content="Usa l'AI integrata" />
+                <ProgressBar x:Name="AvanzamentoIntegrata" Height="6" Margin="0,6,0,0" Maximum="100" Visibility="Collapsed" />
+                <TextBlock x:Name="EsitoIntegrata" Style="{StaticResource Esito}" />
+
+                <Expander x:Name="Avanzate" Margin="0,20,0,0" Header="Avanzate: altri servizi di traduzione e chiavi API">
+                    <StackPanel Margin="0,6,0,0">
                 <TextBlock TextWrapping="Wrap">
-                    Nella modalità <Bold>Automatica</Bold> il programma usa i servizi gratuiti in quest'ordine: se uno
-                    non è disponibile o ha finito la quota gratuita, passa al successivo e lo riprova più tardi.
-                    Configura quelli che vuoi: MyMemory funziona anche senza fare niente.
+                    Non serve configurare niente. Nella modalità <Bold>Automatica</Bold> il programma usa prima l'AI
+                    integrata e poi, finché non è pronta o se il computer non sta al passo, questi servizi in quest'ordine:
+                    se uno non è disponibile o ha finito la quota gratuita, passa al successivo e lo riprova più tardi.
+                    MyMemory funziona anche senza fare niente.
                 </TextBlock>
 
                 <!-- 1. Ollama -->
                 <TextBlock Style="{StaticResource Titolo}" Text="1. TranslateGemma sul PC (Ollama)" />
                 <TextBlock Style="{StaticResource Nota}">
-                    Gratis e senza limiti, e il testo non lascia il PC. Serve il programma gratuito Ollama e il modello
+                    Per chi usa già Ollama, in alternativa all'AI integrata. Gratis e senza limiti, e il testo non lascia il PC. Serve il programma gratuito Ollama e il modello
+                   
                     di traduzione TranslateGemma di Google: 4b pesa 3,3 GB, 12b 8,1 GB (più preciso, ma vuole un PC
                     potente). Senza una scheda grafica dedicata può essere lento.
                 </TextBlock>
@@ -92,8 +107,50 @@
                 <ProgressBar x:Name="Avanzamento" Height="6" Margin="0,8,0,0" Maximum="100" Visibility="Collapsed" />
                 <TextBlock x:Name="EsitoOllama" Style="{StaticResource Esito}" />
 
-                <!-- 2. DeepL -->
-                <TextBlock Style="{StaticResource Titolo}" Text="2. DeepL API Free" />
+                <!-- 2. Gemini -->
+                <TextBlock Style="{StaticResource Titolo}" Text="2. Google Gemini, AI gratuita" />
+                <TextBlock Style="{StaticResource Nota}">
+                    Traduce molto meglio dei servizi qui sotto: segue il senso della conversazione, usa le frasi
+                    precedenti e il glossario e corregge le parole trascritte male. Gratis con un account Google, senza
+                    carta di credito, con un limite giornaliero che di solito basta per circa un'ora di riunione; poi si
+                    passa al servizio successivo. Attenzione: con il piano gratuito Google può usare i testi inviati per
+                    migliorare i suoi prodotti, anche facendoli leggere a delle persone. Non usarlo per le riunioni riservate.
+                </TextBlock>
+                <TextBlock Margin="0,6,0,0">
+                    <Hyperlink NavigateUri="https://aistudio.google.com/apikey" RequestNavigate="ApriPagina">Crea una chiave API gratuita in Google AI Studio</Hyperlink>
+                </TextBlock>
+                <Grid Margin="0,6,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="130" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource Etichetta}" Text="Chiave API:" />
+                    <PasswordBox x:Name="ChiaveGemini" Grid.Column="1" />
+                </Grid>
+                <TextBlock x:Name="EsitoGemini" Style="{StaticResource Esito}" />
+
+                <!-- 3. Groq -->
+                <TextBlock Style="{StaticResource Titolo}" Text="3. Groq, AI gratuita" />
+                <TextBlock Style="{StaticResource Nota}">
+                    Un'altra AI gratuita, molto veloce, con modelli aperti: traduce bene, con il contesto e il glossario.
+                    Gratis con un account Groq, senza carta di credito, con un limite giornaliero più basso (circa
+                    mezz'ora di riunione). Groq usa i testi solo per rispondere, non per addestrare i modelli.
+                </TextBlock>
+                <TextBlock Margin="0,6,0,0">
+                    <Hyperlink NavigateUri="https://console.groq.com/keys" RequestNavigate="ApriPagina">Crea una chiave API gratuita su GroqCloud</Hyperlink>
+                </TextBlock>
+                <Grid Margin="0,6,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="130" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource Etichetta}" Text="Chiave API:" />
+                    <PasswordBox x:Name="ChiaveGroq" Grid.Column="1" />
+                </Grid>
+                <TextBlock x:Name="EsitoGroq" Style="{StaticResource Esito}" />
+
+                <!-- 4. DeepL -->
+                <TextBlock Style="{StaticResource Titolo}" Text="4. DeepL API Free" />
                 <TextBlock Style="{StaticResource Nota}">
                     500.000 caratteri al mese gratis, circa 10 ore di parlato continuo. Serve un account DeepL con il
                     piano gratuito «DeepL API Free» e la sua chiave API (finisce con «:fx»).
@@ -111,8 +168,8 @@
                 </Grid>
                 <TextBlock x:Name="EsitoDeepL" Style="{StaticResource Esito}" />
 
-                <!-- 3. Microsoft -->
-                <TextBlock Style="{StaticResource Titolo}" Text="3. Microsoft Translator" />
+                <!-- 5. Microsoft -->
+                <TextBlock Style="{StaticResource Titolo}" Text="5. Microsoft Translator" />
                 <TextBlock Style="{StaticResource Nota}">
                     2 milioni di caratteri al mese gratis con il piano F0, circa 40 ore di parlato continuo. Serve un
                     account Azure e una risorsa Translator: la chiave e la regione sono nella pagina «Chiavi ed
@@ -139,8 +196,8 @@
                 </Grid>
                 <TextBlock x:Name="EsitoMicrosoft" Style="{StaticResource Esito}" />
 
-                <!-- 4. MyMemory -->
-                <TextBlock Style="{StaticResource Titolo}" Text="4. MyMemory" />
+                <!-- 6. MyMemory -->
+                <TextBlock Style="{StaticResource Titolo}" Text="6. MyMemory" />
                 <TextBlock Style="{StaticResource Nota}">
                     Gratis e senza registrazione, ma con un limite giornaliero: circa 5.000 caratteri (pochi minuti di
                     parlato), 50.000 indicando il tuo indirizzo email (circa un'ora). È l'ultima scelta della modalità
@@ -180,6 +237,8 @@
                     Chiavi ed email restano su questo PC, cifrate con il tuo account di Windows. Con i servizi online il
                     testo trascritto (non l'audio) viene inviato a quel servizio; con TranslateGemma resta sul PC.
                 </TextBlock>
+                    </StackPanel>
+                </Expander>
                 <TextBlock x:Name="Errore" Margin="0,10,0,0" Foreground="#C42B1C" TextWrapping="Wrap" Visibility="Collapsed" />
             </StackPanel>
         </ScrollViewer>

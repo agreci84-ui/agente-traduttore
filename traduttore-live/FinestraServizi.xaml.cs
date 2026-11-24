@@ -28,11 +28,17 @@ public partial class FinestraServizi : Window
         OllamaModello.ItemsSource = new[] { "translategemma:4b", "translategemma:12b" };
         OllamaModello.Text = imp.OllamaModello;
         OllamaIndirizzo.Text = imp.OllamaIndirizzo;
+        ChiaveGemini.Password = Credenziali.Leggi(Credenziali.Gemini) ?? "";
+        ChiaveGroq.Password = Credenziali.Leggi(Credenziali.Groq) ?? "";
         ChiaveDeepL.Password = Credenziali.Leggi(Credenziali.DeepL) ?? "";
         ChiaveMicrosoft.Password = Credenziali.Leggi(Credenziali.Microsoft) ?? "";
         RegioneMicrosoft.Text = imp.MicrosoftRegione;
         EmailMyMemory.Text = Credenziali.Leggi(Credenziali.MyMemory) ?? "";
         ChiaveClaude.Password = Credenziali.Leggi(Credenziali.Claude) ?? "";
+        UsaIntegrata.IsChecked = imp.UsaAIIntegrata;
+        AggiornaIntegrata();
+        AIIntegrata.Cambiato += SuAIIntegrataCambiata;
+        Closed += (_, _) => AIIntegrata.Cambiato -= SuAIIntegrataCambiata;
         Loaded += async (_, _) => await ControllaOllamaAsync();
     }
 
@@ -47,6 +53,29 @@ public partial class FinestraServizi : Window
         esito.Text = testo;
         esito.Foreground = colore ?? Grigio;
     }
+
+    // ---- AI integrata ----
+
+    void SuAIIntegrataCambiata() => Dispatcher.BeginInvoke(AggiornaIntegrata);
+
+    void AggiornaIntegrata()
+    {
+        var fase = AIIntegrata.Stato;
+        AvanzamentoIntegrata.Visibility = fase is AIIntegrata.Fase.Scaricamento or AIIntegrata.Fase.Verifica or AIIntegrata.Fase.Caricamento
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+        AvanzamentoIntegrata.IsIndeterminate = fase != AIIntegrata.Fase.Scaricamento;
+        AvanzamentoIntegrata.Value = AIIntegrata.Percentuale;
+        string testo = fase == AIIntegrata.Fase.NonScaricata
+            ? "Stato: non ancora scaricata. Si scarica da sola appena è attiva."
+            : $"Stato: {AIIntegrata.Descrizione}.";
+        Mostra(EsitoIntegrata, testo, fase == AIIntegrata.Fase.Pronta ? Verde : fase == AIIntegrata.Fase.Errore ? Rosso : null);
+    }
+
+    Task ProvaIntegrataAsync(RichiestaTraduzione richiesta) =>
+        AIIntegrata.Stato == AIIntegrata.Fase.Pronta
+            ? ProvaAsync(EsitoIntegrata, new ServizioIntegrato(_imp.UsaSchedaGrafica), richiesta)
+            : Task.CompletedTask; // lo stato è già scritto sotto la casella
 
     // ---- Ollama ----
 
@@ -157,6 +186,9 @@ public partial class FinestraServizi : Window
                 string modello = OllamaModello.Text.Trim();
                 prove.Add(ProvaOllamaAsync(indirizzo, modello, richiesta, glossario));
             }
+            prove.Add(ProvaIntegrataAsync(richiesta));
+            prove.Add(ProvaAIAsync(EsitoGemini, ServizioAI.Gemini, ChiaveGemini.Password.Trim(), richiesta, glossario));
+            prove.Add(ProvaAIAsync(EsitoGroq, ServizioAI.Groq, ChiaveGroq.Password.Trim(), richiesta, glossario));
             prove.Add(ChiaveDeepL.Password.Trim() is { Length: > 0 } deepl
                 ? ProvaAsync(EsitoDeepL, new ServizioDeepL(deepl), richiesta)
                 : Nessuna(EsitoDeepL, "Nessuna chiave: DeepL non viene usato."));
@@ -174,6 +206,11 @@ public partial class FinestraServizi : Window
             if (IsLoaded) PulsanteProva.IsEnabled = true;
         }
     }
+
+    Task ProvaAIAsync(TextBlock esito, FornitoreAI fornitore, string chiave, RichiestaTraduzione richiesta, string glossario) =>
+        chiave.Length > 0
+            ? ProvaAsync(esito, new ServizioAI(fornitore, chiave, Servizi.ModelloAI(_imp, fornitore), richiesta.LinguaArrivo, glossario), richiesta)
+            : Nessuna(esito, $"Nessuna chiave: {fornitore.Nome} non viene usato.");
 
     static Task Nessuna(TextBlock esito, string testo)
     {
@@ -235,6 +272,8 @@ public partial class FinestraServizi : Window
 
         try
         {
+            Credenziali.Salva(Credenziali.Gemini, ChiaveGemini.Password);
+            Credenziali.Salva(Credenziali.Groq, ChiaveGroq.Password);
             Credenziali.Salva(Credenziali.DeepL, ChiaveDeepL.Password);
             Credenziali.Salva(Credenziali.Microsoft, ChiaveMicrosoft.Password);
             Credenziali.Salva(Credenziali.MyMemory, email);
@@ -246,6 +285,7 @@ public partial class FinestraServizi : Window
             Errore.Visibility = Visibility.Visible;
             return;
         }
+        _imp.UsaAIIntegrata = UsaIntegrata.IsChecked == true;
         _imp.OllamaIndirizzo = OllamaIndirizzo.Text.Trim();
         _imp.OllamaModello = OllamaModello.Text.Trim();
         _imp.MicrosoftRegione = RegioneMicrosoft.Text.Trim();

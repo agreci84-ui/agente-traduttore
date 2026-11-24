@@ -1,0 +1,88 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Traduttore dal vivo per macOS. Usa lo stesso codice della versione per Windows (cartella traduttore-live) per
+    trascrizione, traduzione e divisione in frasi; qui ci sono solo le parti proprie del Mac: l'interfaccia
+    (Avalonia), l'ascolto dell'audio di sistema (Core Audio, programma cattura-audio in Swift) e il Portachiavi.
+  -->
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <!-- Durante lo sviluppo parte anche con un runtime .NET più recente; l'app per il Mac include il suo. -->
+    <RollForward>Major</RollForward>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>TraduttoreLive</AssemblyName>
+    <RootNamespace>TraduttoreLive</RootNamespace>
+    <DefineConstants>$(DefineConstants);MACOS</DefineConstants>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+
+    <Version>1.1.0</Version>
+    <Product>Traduttore dal vivo</Product>
+    <AssemblyTitle>Traduttore dal vivo</AssemblyTitle>
+    <Description>Sottotitoli tradotti in tempo reale per le riunioni online</Description>
+    <Authors>agreci84-ui</Authors>
+    <Copyright>Copyright © 2026 agreci84-ui. Licenza MIT.</Copyright>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <DefaultItemExcludes>$(DefaultItemExcludes);out\**;cattura-audio\**</DefaultItemExcludes>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Anthropic" Version="13.12.0" />
+    <PackageReference Include="Avalonia" Version="11.3.23" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.23" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.23" />
+    <!-- L'AI di traduzione integrata (TranslateGemma con llama.cpp): sui Mac Apple Silicon usa Metal. -->
+    <PackageReference Include="LLamaSharp" Version="0.30.0" />
+    <PackageReference Include="LLamaSharp.Backend.Cpu" Version="0.30.0" />
+    <PackageReference Include="Whisper.net" Version="1.9.1" />
+    <PackageReference Include="Whisper.net.Runtime" Version="1.9.1" />
+  </ItemGroup>
+
+  <!-- Codice in comune con la versione per Windows. -->
+  <ItemGroup>
+    <Compile Include="..\traduttore-live\Impostazioni.cs" Link="Comune\Impostazioni.cs" />
+    <Compile Include="..\traduttore-live\Lingue.cs" Link="Comune\Lingue.cs" />
+    <Compile Include="..\traduttore-live\Motore.cs" Link="Comune\Motore.cs" />
+    <Compile Include="..\traduttore-live\RegistroRiunione.cs" Link="Comune\RegistroRiunione.cs" />
+    <Compile Include="..\traduttore-live\RigaSottotitolo.cs" Link="Comune\RigaSottotitolo.cs" />
+    <Compile Include="..\traduttore-live\Audio\SegmentatoreVoce.cs" Link="Comune\Audio\SegmentatoreVoce.cs" />
+    <Compile Include="..\traduttore-live\Trascrizione\Trascrittore.cs" Link="Comune\Trascrizione\Trascrittore.cs" />
+    <Compile Include="..\traduttore-live\Traduzione\CatenaTraduzione.cs" Link="Comune\Traduzione\CatenaTraduzione.cs" />
+    <Compile Include="..\traduttore-live\Traduzione\IServizioTraduzione.cs" Link="Comune\Traduzione\IServizioTraduzione.cs" />
+    <Compile Include="..\traduttore-live\Traduzione\Interprete.cs" Link="Comune\Traduzione\Interprete.cs" />
+    <Compile Include="..\traduttore-live\Traduzione\Rete.cs" Link="Comune\Traduzione\Rete.cs" />
+    <Compile Include="..\traduttore-live\Traduzione\Servizi.cs" Link="Comune\Traduzione\Servizi.cs" />
+    <Compile Include="..\traduttore-live\Traduzione\AIIntegrata.cs" Link="Comune\Traduzione\AIIntegrata.cs" />
+    <Compile Include="..\traduttore-live\Traduzione\ServizioAI.cs" Link="Comune\Traduzione\ServizioAI.cs" />
+    <Compile Include="..\traduttore-live\Traduzione\TranslateGemma.cs" Link="Comune\Traduzione\TranslateGemma.cs" />
+    <Compile Include="..\traduttore-live\Traduzione\ServizioClaude.cs" Link="Comune\Traduzione\ServizioClaude.cs" />
+    <Compile Include="..\traduttore-live\Traduzione\ServizioDeepL.cs" Link="Comune\Traduzione\ServizioDeepL.cs" />
+    <Compile Include="..\traduttore-live\Traduzione\ServizioMicrosoft.cs" Link="Comune\Traduzione\ServizioMicrosoft.cs" />
+    <Compile Include="..\traduttore-live\Traduzione\ServizioMyMemory.cs" Link="Comune\Traduzione\ServizioMyMemory.cs" />
+    <Compile Include="..\traduttore-live\Traduzione\ServizioOllama.cs" Link="Comune\Traduzione\ServizioOllama.cs" />
+  </ItemGroup>
+
+  <!--
+    Il programma che ascolta l'audio di sistema, in Swift: si compila per Intel e Apple Silicon (un solo file
+    «universale») e finisce accanto al programma. Serve il compilatore Swift: xcode-select install.
+  -->
+  <PropertyGroup>
+    <CartellaCattura>$(BaseIntermediateOutputPath)cattura-audio\</CartellaCattura>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="$(CartellaCattura)cattura-audio" Link="cattura-audio" Visible="false"
+          CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <Target Name="CompilaCatturaAudio" BeforeTargets="BeforeBuild"
+          Inputs="cattura-audio\main.swift" Outputs="$(CartellaCattura)cattura-audio">
+    <MakeDir Directories="$(CartellaCattura)" />
+    <Exec Command="xcrun swiftc -O -target x86_64-apple-macos14.2 -o &quot;$(CartellaCattura)cattura-audio-x64&quot; cattura-audio/main.swift" />
+    <Exec Command="xcrun swiftc -O -target arm64-apple-macos14.2 -o &quot;$(CartellaCattura)cattura-audio-arm64&quot; cattura-audio/main.swift" />
+    <Exec Command="lipo -create -output &quot;$(CartellaCattura)cattura-audio&quot; &quot;$(CartellaCattura)cattura-audio-x64&quot; &quot;$(CartellaCattura)cattura-audio-arm64&quot;" />
+  </Target>
+
+</Project>

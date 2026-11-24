@@ -22,6 +22,10 @@
 
   <ItemGroup>
     <PackageReference Include="Anthropic" Version="13.12.0" />
+    <!-- L'AI di traduzione integrata (TranslateGemma con llama.cpp): processore o scheda grafica con Vulkan. -->
+    <PackageReference Include="LLamaSharp" Version="0.30.0" />
+    <PackageReference Include="LLamaSharp.Backend.Cpu" Version="0.30.0" />
+    <PackageReference Include="LLamaSharp.Backend.Vulkan.Windows" Version="0.30.0" />
     <PackageReference Include="NAudio" Version="3.3.0" />
     <PackageReference Include="Whisper.net" Version="1.9.1" />
     <PackageReference Include="Whisper.net.Runtime" Version="1.9.1" />

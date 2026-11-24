@@ -79,23 +79,8 @@ public sealed class ServizioOllama : IServizioTraduzione
     static string? NullSeVuoto(string testo) => string.IsNullOrWhiteSpace(testo) ? null : testo.Trim();
 
     /// <summary>Il messaggio nel formato indicato da Google per TranslateGemma (un solo messaggio, niente istruzioni di sistema).</summary>
-    static string RichiestaTranslateGemma(RichiestaTraduzione r)
-    {
-        string a = NomeLingua(r.LinguaArrivo), codA = CodiceLingua(r.LinguaArrivo);
-        if (string.IsNullOrWhiteSpace(r.LinguaOriginale))
-            return $"You are a professional translator into {a} ({codA}). Your goal is to accurately convey the meaning " +
-                   $"and nuances of the original text while adhering to {a} grammar, vocabulary, and cultural sensitivities.\n" +
-                   $"Produce only the {a} translation, without any additional explanations or commentary. " +
-                   $"Please translate the following text into {a}:\n\n\n{r.Testo.Trim()}";
-        string da = NomeLingua(r.LinguaOriginale), codDa = CodiceLingua(r.LinguaOriginale);
-        return $"You are a professional {da} ({codDa}) to {a} ({codA}) translator. Your goal is to accurately convey the " +
-               $"meaning and nuances of the original {da} text while adhering to {a} grammar, vocabulary, and cultural sensitivities.\n" +
-               $"Produce only the {a} translation, without any additional explanations or commentary. " +
-               $"Please translate the following {da} text into {a}:\n\n\n{r.Testo.Trim()}";
-    }
-
-    static string NomeLingua(string codice) => codice == "zh" ? "Chinese" : Lingue.NomeInglese(codice);
-    static string CodiceLingua(string codice) => codice == "zh" ? "zh-Hans" : codice;
+    static string RichiestaTranslateGemma(RichiestaTraduzione r) =>
+        TranslateGemma.Istruzioni(r.LinguaOriginale, r.LinguaArrivo) + r.Testo.Trim();
 
     // ---- Controllo e scaricamento del modello (finestra dei servizi) ----
 

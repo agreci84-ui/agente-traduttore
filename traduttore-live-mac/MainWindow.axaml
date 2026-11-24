@@ -1,0 +1,93 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="using:TraduttoreLive"
+        x:Class="TraduttoreLive.MainWindow"
+        Title="Traduttore dal vivo"
+        SystemDecorations="None"
+        TransparencyLevelHint="Transparent"
+        Background="Transparent"
+        Topmost="True"
+        WindowStartupLocation="Manual"
+        MinWidth="380" MinHeight="120" Width="900" Height="240">
+
+    <Window.Styles>
+        <!-- Pulsanti piatti della barra in alto -->
+        <Style Selector="Button.barra">
+            <Setter Property="Foreground" Value="#B3FFFFFF" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Width" Value="30" />
+            <Setter Property="Height" Value="26" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="CornerRadius" Value="5" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.barra:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#26FFFFFF" />
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+        <Style Selector="Button.barra:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#40FFFFFF" />
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+
+        <!-- Sottotitoli: la traduzione in grande; gli avvisi del programma in giallo -->
+        <Style Selector="TextBlock.principale">
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FontSize" Value="{DynamicResource DimensioneTesto}" />
+        </Style>
+        <Style Selector="TextBlock.principale.avviso">
+            <Setter Property="Foreground" Value="#FFF2C66D" />
+            <Setter Property="FontWeight" Value="Normal" />
+            <Setter Property="FontSize" Value="{DynamicResource DimensioneOriginale}" />
+        </Style>
+    </Window.Styles>
+
+    <Border x:Name="Cornice" CornerRadius="10" Background="#E0101317" BorderBrush="#30FFFFFF" BorderThickness="1">
+        <Grid RowDefinitions="Auto,*" Margin="16,6,10,14">
+
+            <!-- Barra in alto: stato e pulsanti -->
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button x:Name="PulsantePausa" Classes="barra" Content="&#x23F8;&#xFE0E;"
+                            ToolTip.Tip="Metti in pausa" Click="SuPausa" />
+                    <Button x:Name="PulsanteMenu" Classes="barra" Content="&#x22EF;"
+                            ToolTip.Tip="Impostazioni" Click="SuMenu" />
+                    <Button Classes="barra" Content="&#x2715;" ToolTip.Tip="Chiudi" Click="SuChiudi" />
+                </StackPanel>
+                <TextBlock x:Name="TestoStato" Foreground="#8CFFFFFF" FontSize="12" VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis" Text="Avvio…" />
+            </DockPanel>
+
+            <!-- Sottotitoli -->
+            <ScrollViewer x:Name="Scorrimento" Grid.Row="1" Margin="0,4,6,0"
+                          VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
+                <ItemsControl x:Name="Elenco">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="local:RigaVista">
+                            <StackPanel Margin="0,8,0,0">
+                                <TextBlock Text="{Binding RigaOriginale}" TextWrapping="Wrap"
+                                           Foreground="#99C3CCD8" FontSize="{DynamicResource DimensioneOriginale}"
+                                           IsVisible="{Binding RigaOriginaleVisibile}" />
+                                <TextBlock Classes="principale" Classes.avviso="{Binding Avviso}"
+                                           Text="{Binding TestoPrincipale}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
+            <!-- Angolo per ridimensionare la finestra -->
+            <Panel x:Name="Maniglia" Grid.Row="1" Width="18" Height="18" Margin="0,0,-8,-12"
+                   HorizontalAlignment="Right" VerticalAlignment="Bottom" Background="Transparent"
+                   Cursor="BottomRightCorner">
+                <Path Data="M 14,5 L 5,14 M 14,9 L 9,14" Stroke="#50FFFFFF" StrokeThickness="1.2" />
+            </Panel>
+        </Grid>
+    </Border>
+</Window>

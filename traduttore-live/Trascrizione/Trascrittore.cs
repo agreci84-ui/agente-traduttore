@@ -18,8 +18,9 @@ public sealed record Trascrizione(string Testo, string Lingua);
 /// </summary>
 public sealed partial class Trascrittore : IDisposable
 {
-    public static string CartellaModelli { get; } = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TraduttoreLive", "modelli");
+    public static string CartellaModelli { get; } = OperatingSystem.IsMacOS()
+        ? Path.Combine(Impostazioni.Cartella, "modelli")
+        : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TraduttoreLive", "modelli");
 
     /// <summary>Modelli proposti nel menu: più grande = più preciso ma più lento.</summary>
     public static readonly (string Nome, string Descrizione)[] Modelli =
@@ -40,6 +41,9 @@ public sealed partial class Trascrittore : IDisposable
 
     /// <summary>Motore di calcolo in uso: "Vulkan" (scheda grafica) o "Cpu".</summary>
     public static string MotoreDiCalcolo => RuntimeOptions.LoadedLibrary?.ToString() ?? "?";
+
+    /// <summary>La trascrizione usa la scheda grafica: Vulkan su Windows, Metal sui Mac con Apple Silicon.</summary>
+    public static bool SuSchedaGrafica { get; private set; }
 
     Trascrittore(string modello, WhisperFactory fabbrica, WhisperProcessor processore,
                  WhisperVadFactory? fabbricaVad, WhisperVadProcessor? vad)
@@ -71,7 +75,11 @@ public sealed partial class Trascrittore : IDisposable
         avanzamento.Report($"Carico il modello «{modello}»…");
         return await Task.Run(() =>
         {
-            var fabbrica = WhisperFactory.FromPath(percorso);
+            var fabbrica = WhisperFactory.FromPath(percorso, new WhisperFactoryOptions { UseGpu = usaSchedaGrafica });
+            // Sui Mac con Apple Silicon la libreria di base usa da sola la scheda grafica (Metal).
+            SuSchedaGrafica = MotoreDiCalcolo.Contains("vulkan", StringComparison.OrdinalIgnoreCase)
+                || (usaSchedaGrafica && OperatingSystem.IsMacOS()
+                    && System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture == System.Runtime.InteropServices.Architecture.Arm64);
             var builder = fabbrica.CreateBuilder()
                 .WithLanguage(string.IsNullOrWhiteSpace(lingua) ? "auto" : lingua)
                 .WithThreads(Math.Clamp(Environment.ProcessorCount / 2, 2, 8))

@@ -6,9 +6,9 @@ L'AUDIO NON LASCIA MAI IL PC
 L'audio della riunione viene trascritto sul PC con Whisper. Le trascrizioni si salvano in Documenti\Traduttore dal vivo (si può disattivare dal menu).
 
 COSA PASSA IN RETE
-- Servizi di traduzione online (MyMemory e, se li configuri, DeepL, Microsoft Translator o Claude): ricevono il testo trascritto di ogni frase, non l'audio. Si usano solo se li accetti: nella pagina successiva di questa installazione, al primo avvio o dal menu Traduzione.
-- Con TranslateGemma (tramite il programma Ollama, sul PC) il testo resta sul PC.
-- Al primo avvio il programma scarica da Hugging Face il modello di trascrizione (circa 190 MB) e il rilevatore di voce.
+- Servizi di traduzione online (MyMemory e, se li configuri, Google Gemini, Groq, DeepL, Microsoft Translator o Claude): ricevono il testo trascritto di ogni frase, non l'audio. Con il piano gratuito di Gemini, Google può usare i testi per migliorare i suoi prodotti. Si usano solo se li accetti: nella pagina successiva di questa installazione, al primo avvio o dal menu Traduzione.
+- Con l'AI di traduzione integrata (TranslateGemma, eseguita dentro il programma) il testo resta sul PC.
+- Al primo avvio il programma scarica da Hugging Face il modello di trascrizione (circa 190 MB), il rilevatore di voce e l'AI di traduzione integrata (2,5 GB; si può disattivare dal menu Traduzione).
 - Chiavi dei servizi ed email per MyMemory restano sul PC, cifrate con il tuo account di Windows.
 
 COME DISATTIVARE I SERVIZI ONLINE

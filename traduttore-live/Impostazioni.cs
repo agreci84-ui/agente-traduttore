@@ -36,14 +36,20 @@ public sealed class Impostazioni
     public bool UsaSchedaGrafica { get; set; } = true;
 
     /// <summary>
-    /// Servizio di traduzione: "automatico" = i servizi gratuiti disponibili, uno dopo l'altro (TranslateGemma sul
-    /// PC con Ollama, DeepL, Microsoft Translator, MyMemory); oppure uno solo: "ollama", "deepl", "microsoft",
-    /// "mymemory", "claude" (a pagamento, mai usato in automatico).
+    /// Servizio di traduzione: "automatico" = l'AI integrata e i servizi gratuiti disponibili, uno dopo l'altro
+    /// (TranslateGemma in Ollama, Gemini, Groq, DeepL, Microsoft Translator, MyMemory); oppure uno solo: "integrata",
+    /// "ollama", "gemini", "groq", "deepl", "microsoft", "mymemory", "claude" (a pagamento, mai usato in automatico).
     /// </summary>
     public string ServizioTraduzione { get; set; } = "automatico";
 
     /// <summary>
-    /// L'utente accetta di usare i servizi di traduzione online (MyMemory, DeepL, Microsoft, Claude), che ricevono
+    /// Usa l'AI di traduzione integrata (TranslateGemma dentro il programma): gratis, senza limiti, il testo non lascia
+    /// il computer. La prima volta si scarica da sola (2,5 GB). Nella modalità automatica viene prima degli altri servizi.
+    /// </summary>
+    public bool UsaAIIntegrata { get; set; } = true;
+
+    /// <summary>
+    /// L'utente accetta di usare i servizi di traduzione online (Gemini, Groq, MyMemory, DeepL, Microsoft, Claude), che ricevono
     /// il testo trascritto. null = non ha ancora scelto (lo si chiede all'installazione o al primo avvio);
     /// false = si traduce solo sul PC (TranslateGemma).
     /// </summary>
@@ -57,6 +63,16 @@ public sealed class Impostazioni
     /// oppure un modello di chat (es. gemma3:4b), che usa contesto e glossario.
     /// </summary>
     public string OllamaModello { get; set; } = "translategemma:4b";
+
+    /// <summary>
+    /// Modello di Google Gemini (AI gratuita). Con «gemini-flash-lite-latest» Google aggiorna da solo il modello
+    /// Flash-Lite, quello con più traduzioni gratuite al giorno; «gemini-flash-latest» traduce un po' meglio, ma il
+    /// piano gratuito ne concede molte meno.
+    /// </summary>
+    public string GeminiModello { get; set; } = "gemini-flash-lite-latest";
+
+    /// <summary>Modello di Groq (AI gratuita), per esempio «openai/gpt-oss-120b» o «openai/gpt-oss-20b».</summary>
+    public string GroqModello { get; set; } = "openai/gpt-oss-120b";
 
     /// <summary>Regione della risorsa Microsoft Translator (es. "westeurope"); vuota per le risorse globali.</summary>
     public string MicrosoftRegione { get; set; } = "";
@@ -90,9 +106,11 @@ public sealed class Impostazioni
     public double FinestraLarghezza { get; set; } = 900;
     public double FinestraAltezza { get; set; } = 240;
 
+    /// <summary>%APPDATA%\TraduttoreLive su Windows, ~/Library/Application Support/TraduttoreLive sul Mac.</summary>
     [JsonIgnore]
-    public static string Cartella { get; } =
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TraduttoreLive");
+    public static string Cartella { get; } = OperatingSystem.IsMacOS()
+        ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Library", "Application Support", "TraduttoreLive")
+        : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TraduttoreLive");
 
     [JsonIgnore]
     static string Percorso => Path.Combine(Cartella, "impostazioni.json");

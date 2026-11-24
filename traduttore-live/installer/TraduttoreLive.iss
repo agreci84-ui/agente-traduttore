@@ -72,9 +72,9 @@ Name: "english"; MessagesFile: "compiler:Default.isl"; InfoBeforeFile: "privacy-
 
 [CustomMessages]
 italiano.Privacy=Privacy:
-italiano.ServiziOnline=Usa i servizi di traduzione online gratuiti (ricevono il testo trascritto, non l'audio: MyMemory e, se li configuri, DeepL o Microsoft Translator). Senza, si traduce solo sul PC con TranslateGemma.
+italiano.ServiziOnline=Usa i servizi di traduzione online gratuiti (ricevono il testo trascritto, non l'audio: MyMemory e, se li configuri, Google Gemini, Groq, DeepL o Microsoft Translator). Senza, si traduce solo sul PC con l'AI integrata.
 english.Privacy=Privacy:
-english.ServiziOnline=Use the free online translation services (they receive the transcribed text, not the audio: MyMemory and, if you set them up, DeepL or Microsoft Translator). Without them, translation runs only on the PC with TranslateGemma.
+english.ServiziOnline=Use the free online translation services (they receive the transcribed text, not the audio: MyMemory and, if you set them up, Google Gemini, Groq, DeepL or Microsoft Translator). Without them, translation runs only on the PC with the built-in AI.
 
 [Tasks]
 Name: "serviziOnline"; Description: "{cm:ServiziOnline}"; GroupDescription: "{cm:Privacy}"
@@ -105,7 +105,8 @@ Filename: "{app}\{#Eseguibile}"; Description: "{cm:LaunchProgram,{#Nome}}"; Flag
 
 [UninstallDelete]
 ; Si tolgono i modelli di trascrizione scaricati (centinaia di MB) e le chiavi dei servizi di traduzione.
-; Restano le impostazioni e, in Documenti, le trascrizioni delle riunioni. Il modello TranslateGemma è di Ollama.
+; Con i modelli se ne va anche l'AI integrata (2,5 GB). Restano le impostazioni e, in Documenti, le trascrizioni delle
+; riunioni. Il modello TranslateGemma scaricato con Ollama è di Ollama.
 Type: filesandordirs; Name: "{localappdata}\TraduttoreLive\modelli"
 Type: dirifempty; Name: "{localappdata}\TraduttoreLive"
 Type: files; Name: "{userappdata}\TraduttoreLive\credenziali.dat"

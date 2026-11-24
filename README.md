@@ -4,7 +4,8 @@ Due strumenti di traduzione open source, con licenza MIT:
 
 - **[Traduttore dal vivo](traduttore-live/README.md)**: un programma per Windows che **traduce in tempo reale le voci
   di una riunione online** (Teams, Zoom, Google Meet, Webex…) e le mostra come sottotitoli. La trascrizione avviene
-  sul PC con Whisper, la traduzione è gratuita. **[Scarica l'ultima versione](https://github.com/agreci84-ui/agente-traduttore/releases/latest)**.
+  sul PC con Whisper, la traduzione con un'AI integrata nel programma, gratuita e senza chiavi da configurare. **[Scarica l'ultima versione](https://github.com/agreci84-ui/agente-traduttore/releases/latest)**.
+  C'è anche la **[versione per Mac](traduttore-live-mac/README.md)** (macOS 14.2 o successivo), da creare con uno script.
 - **Agente traduttore**: un agente per [Claude Code](https://claude.com/claude-code) che traduce testi, file e
   documentazione dei progetti tra qualsiasi coppia di lingue, senza rompere formattazione, codice e segnaposto.
   È definito in [.claude/agents/traduttore.md](.claude/agents/traduttore.md) ed è descritto qui sotto.
@@ -65,8 +66,9 @@ L'agente lo legge prima di iniziare e le sue scelte prevalgono su quelle dell'ag
 
 Il programma [Traduttore dal vivo](traduttore-live/README.md) ascolta l'audio del PC durante una riunione online e
 mostra la traduzione delle voci degli altri partecipanti come sottotitoli, in una finestra sempre in primo piano.
-La trascrizione avviene sul PC con Whisper. La traduzione è gratuita: il programma usa uno dopo l'altro
-TranslateGemma sul PC, DeepL, Microsoft Translator e MyMemory, passando al successivo quando uno non è disponibile;
+La trascrizione avviene sul PC con Whisper. La traduzione è gratuita: la fa l'AI integrata (TranslateGemma di Google,
+che il programma scarica da solo la prima volta e fa girare sul PC) e, finché non è pronta o se il PC non sta al
+passo, i servizi online gratuiti, passando al successivo quando uno non è disponibile;
 Claude, a pagamento, si può scegliere dal menu.
 
 Le trascrizioni che salva (`Documenti\Traduttore dal vivo`) sono normali file di testo: dopo la riunione puoi
